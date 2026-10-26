@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "cadcraft-app": {
+      "command": "mise",
+      "args": ["exec", "--", "cadcraft-cli", "mcp", "--connect", "127.0.0.1:7979", "--lazy", "--launch"]
+    },
+    "designcraft-app": {
+      "command": "mise",
+      "args": ["exec", "--", "sh", "scripts/mcp-open-app.sh", "DesignCraft", "7981", "designcraft-cli", "mcp", "--connect", "127.0.0.1:7981"]
+    },
+    "effectcraft-app": {
+      "command": "mise",
+      "args": ["exec", "--", "sh", "scripts/mcp-open-app.sh", "EffectCraft", "7982", "effectcraft-cli", "mcp", "--bridge", "7982"]
+    },
+    "vectorcraft-app": {
+      "command": "mise",
+      "args": ["exec", "--", "sh", "scripts/mcp-open-app.sh", "VectorCraft", "7990", "vectorcraft-cli", "mcp", "--connect", "127.0.0.1:7990"]
+    }
+  }
+}

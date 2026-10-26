@@ -19,25 +19,30 @@ mise run cadcraft:install       # an app's CLI (with its MCP server) and desktop
 mise run vectorcraft:install
 ```
 
-Then open this repo in Claude Code. [.mcp.json](.mcp.json) has two MCP servers per checked app,
-started through mise so they use the pinned versions:
+Then open this repo in Claude Code. [.mcp.json](.mcp.json) gives Claude a headless MCP server for
+each checked app (`cadcraft`, `designcraft`, `effectcraft`, `vectorcraft`), started through mise so
+it uses the pinned version. Headless servers work on a document with no window, so no app opens.
 
-| Server | What it drives | Desktop app opens |
+To watch Claude work in a desktop app, switch on that app's live server:
+
+```sh
+mise run cadcraft:watch      # adds cadcraft-app to Claude Code, for this project only
+mise run cadcraft:unwatch    # takes it out again
+```
+
+| Live server | Drives | Desktop app opens |
 |---|---|---|
-| `cadcraft` | A headless drawing, no window | Never |
-| `cadcraft-app` | The CADCraft app on port 7979, live | At the first tool call (`--lazy --launch`) |
-| `designcraft` | A headless document, no window | Never |
-| `designcraft-app` | The DesignCraft app on port 7981, live | When the server starts |
-| `effectcraft` | A headless project, no window | Never |
-| `effectcraft-app` | The EffectCraft app on port 7982, live | When the server starts |
-| `vectorcraft` | A headless document, no window | Never |
-| `vectorcraft-app` | The VectorCraft app on port 7990, live | When the server starts |
+| `cadcraft-app` | CADCraft on port 7979 | At the first tool call (`--lazy --launch`) |
+| `designcraft-app` | DesignCraft on port 7981 | When the server starts |
+| `effectcraft-app` | EffectCraft on port 7982 | When the server starts |
+| `vectorcraft-app` | VectorCraft on port 7990 | When the server starts |
 
-Claude Code asks you to approve project servers the first time; `claude mcp list` shows whether
-they connect.
+The live servers are defined in [mcp-live.json](mcp-live.json). A watch is added in Claude Code's
+local scope, so it's yours only, and loads in the next session or through `/mcp`. Claude Code asks
+you to approve the project's servers the first time; `claude mcp list` shows whether they connect.
 
-**Claude Desktop** gets the same servers from `mise run desktop:install` (quit Claude Desktop first,
-then reopen it). `mise run desktop:uninstall` takes them out again. Both need jq from this repo:
+**Claude Desktop** gets the headless servers from `mise run desktop:install` (quit Claude Desktop
+first, then reopen it). `mise run desktop:uninstall` takes them out again. Both need jq from this repo:
 `mise install jq`.
 
 ## Tasks
@@ -46,7 +51,9 @@ then reopen it). `mise run desktop:uninstall` takes them out again. Both need jq
 |---|---|---|
 | `<app>:install` | Installs the app's CLI and desktop app, e.g. `cadcraft:install` | `<app>:uninstall` |
 | `<app>:uninstall` | Removes every installed version of both and unregisters the app from macOS | `<app>:install` |
-| `apps:install <app>...` / `apps:uninstall <app>...` | The same for several apps at once | each other |
+| `<app>:watch` | Adds the app's live MCP server (from `mcp-live.json`) to Claude Code for this project | `<app>:unwatch` |
+| `<app>:unwatch` | Removes it | `<app>:watch` |
+| `apps:install`, `apps:uninstall`, `apps:watch`, `apps:unwatch` `<app>...` | The same for several apps at once | each other |
 | `desktop:install` | Adds the servers in `.mcp.json` to Claude Desktop | `desktop:uninstall` |
 | `desktop:uninstall` | Removes exactly those servers; the rest of Claude Desktop's config is left byte-for-byte as it was | `desktop:install` |
 | `status` | Shows each app's version, install state, whether it's running, and its MCP servers | (read-only) |
@@ -61,6 +68,7 @@ never fetch anything. (A bare `mise install` would install every app, about 3 GB
 |---|---|---|---|
 | App CLIs and desktop apps | `~/.local/share/mise/installs/<app>[-cli]/<version>/` | `<app>:install` | `<app>:uninstall` |
 | Apps' registration with macOS (so `open -a <App>` finds them) | LaunchServices | `<app>:install` ([scripts/unpack-dmg.sh](scripts/unpack-dmg.sh)) | `<app>:uninstall` |
+| Live MCP servers in Claude Code | This project's entry in `~/.claude.json` (Claude Code's local scope) | `<app>:watch` | `<app>:unwatch` |
 | MCP servers in Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` | `desktop:install` | `desktop:uninstall` |
 
 Files the apps write themselves (documents, preferences, control tokens such as
@@ -144,9 +152,10 @@ and sets the apps up for agents.
 - **CADCraft's first live call can fail** with "missing or invalid control token" right after
   `--launch` opens the app: the bridge reads the old token before the app writes a new one
   (upstream #2087). The error says it is safe to send again, and the retry works.
-- **DesignCraft, EffectCraft and VectorCraft open when their servers start** (in Claude Code or
-  Claude Desktop), because their MCP servers can't open the app on demand. Only CADCraft waits for
-  the first tool call.
+- **A watched DesignCraft, EffectCraft or VectorCraft opens as soon as its live server starts**,
+  because their MCP servers can't open the app on demand. Only CADCraft waits for the first tool
+  call.
+- **Claude Desktop gets only the headless servers** for now; watching an app there isn't wired up.
 - **EffectCraft's window screenshots are large** (about 28 MB at full size); its `screenshot` tool
   takes `max_side` to scale them down.
 - **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile; name

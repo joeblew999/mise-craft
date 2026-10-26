@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Remove apps' live MCP servers that apps:watch added to Claude Code: `mise run apps:unwatch cadcraft`."
+#USAGE arg "<app>" var=#true help="An app, such as cadcraft"
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+for app in $usage_app; do
+  if claude mcp remove --scope local "$app-app" >/dev/null 2>&1; then
+    echo "removed $app-app"
+  else
+    echo "$app-app wasn't added"
+  fi
+done

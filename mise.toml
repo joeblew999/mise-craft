@@ -71,6 +71,14 @@ vectorcraft = { version = "0.17.0", asset_pattern = "vectorcraft-*-macos-univers
 wordcraft-cli = { version = "0.11.0", asset_pattern = "wordcraft-cli-*-macos-universal.zip", os = ["macos"] }
 wordcraft = { version = "0.11.0", asset_pattern = "wordcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
 
+[tasks."cadcraft:watch"]
+description = "Let Claude drive the CADCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with cadcraft:unwatch."
+run = "mise run apps:watch cadcraft"
+
+[tasks."cadcraft:unwatch"]
+description = "Remove CADCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch cadcraft"
+
 [tasks."cadcraft:install"]
 description = "Install CADCraft 0.13.0: its CLI (cadcraft-cli, with the MCP server) and desktop app. Undo with cadcraft:uninstall."
 run = "mise run apps:install cadcraft"
@@ -87,6 +95,14 @@ run = "mise run apps:install deckcraft"
 description = "Uninstall DeckCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall deckcraft"
 
+[tasks."designcraft:watch"]
+description = "Let Claude drive the DesignCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with designcraft:unwatch."
+run = "mise run apps:watch designcraft"
+
+[tasks."designcraft:unwatch"]
+description = "Remove DesignCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch designcraft"
+
 [tasks."designcraft:install"]
 description = "Install DesignCraft 0.13.0: its CLI (designcraft-cli, with the MCP server) and desktop app. Undo with designcraft:uninstall."
 run = "mise run apps:install designcraft"
@@ -94,6 +110,14 @@ run = "mise run apps:install designcraft"
 [tasks."designcraft:uninstall"]
 description = "Uninstall DesignCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall designcraft"
+
+[tasks."effectcraft:watch"]
+description = "Let Claude drive the EffectCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with effectcraft:unwatch."
+run = "mise run apps:watch effectcraft"
+
+[tasks."effectcraft:unwatch"]
+description = "Remove EffectCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch effectcraft"
 
 [tasks."effectcraft:install"]
 description = "Install EffectCraft 0.17.0: its CLI (effectcraft-cli, with the MCP server) and desktop app. Undo with effectcraft:uninstall."
@@ -158,6 +182,14 @@ run = "mise run apps:install soundcraft"
 [tasks."soundcraft:uninstall"]
 description = "Uninstall SoundCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall soundcraft"
+
+[tasks."vectorcraft:watch"]
+description = "Let Claude drive the VectorCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with vectorcraft:unwatch."
+run = "mise run apps:watch vectorcraft"
+
+[tasks."vectorcraft:unwatch"]
+description = "Remove VectorCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch vectorcraft"
 
 [tasks."vectorcraft:install"]
 description = "Install VectorCraft 0.17.0: its CLI (vectorcraft-cli, with the MCP server) and desktop app. Undo with vectorcraft:uninstall."

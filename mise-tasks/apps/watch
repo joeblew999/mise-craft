@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Add apps' live MCP servers (from mcp-live.json) to Claude Code for this project only, so Claude drives the desktop app while you watch: `mise run apps:watch cadcraft`. Undo with apps:unwatch."
+#USAGE arg "<app>" var=#true help="An app with a live server in mcp-live.json, such as cadcraft"
+set -euo pipefail
+root=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$root"
+for app in $usage_app; do
+  server=$(jq -c --arg n "$app-app" '.mcpServers[$n] // empty' mcp-live.json)
+  [ -n "$server" ] || { echo "$app has no live server in mcp-live.json yet" >&2; exit 1; }
+  claude mcp remove --scope local "$app-app" >/dev/null 2>&1 || true
+  claude mcp add-json --scope local "$app-app" "$server"
+done
+echo "Start a new Claude Code session (or use /mcp) to load them."

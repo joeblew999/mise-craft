@@ -4,7 +4,9 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 tools=$(mise ls --json 2>/dev/null)
-code_servers=$(jq -r '.mcpServers | keys[]' "$root/.mcp.json")
+# Claude Code: the project's .mcp.json plus the live servers <app>:watch added for this project.
+code_servers=$( { jq -r '.mcpServers | keys[]' "$root/.mcp.json"
+  jq -r --arg root "$root" '.projects[$root].mcpServers // {} | keys[]' "$HOME/.claude.json" 2>/dev/null || true; } )
 desktop_servers=$([ -f "$desktop" ] && jq -r --arg root "$root" \
   '(.mcpServers // {}) | to_entries[] | select(.value.args[0:2] == ["-C", $root]) | .key' "$desktop" || true)
 

@@ -52,8 +52,23 @@ for a in "${apps[@]}"; do
   printf '%s = { version = "%s", asset_pattern = "%s-*-macos-universal.dmg", os = ["macos"], postinstall = '"'"'sh "{{ config_root }}/scripts/unpack-dmg.sh"'"'"' }\n' "$id" "$version" "$id"
 done
 
+# Apps with a live server in mcp-live.json also get watch/unwatch tasks.
+live=$(grep -o '"[a-z]*-app"' "$(dirname "$0")/../mcp-live.json" | tr -d '"')
+
 for a in "${apps[@]}"; do
   read -r id version name <<<"$a"
+  if grep -qx "$id-app" <<<"$live"; then
+    cat <<EOF
+
+[tasks."$id:watch"]
+description = "Let Claude drive the $name desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with $id:unwatch."
+run = "mise run apps:watch $id"
+
+[tasks."$id:unwatch"]
+description = "Remove $name's live MCP server from Claude Code."
+run = "mise run apps:unwatch $id"
+EOF
+  fi
   cat <<EOF
 
 [tasks."$id:install"]
