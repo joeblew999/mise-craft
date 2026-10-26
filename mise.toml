@@ -1,0 +1,69 @@
+# Each Craft app's GitHub repo is installed twice under aliases: `<app>-cli` (the CLI, with its MCP
+# server) and `<app>` (the desktop app). Each alias gets its own install directory. macOS only for
+# now: it's the one platform every app publishes a CLI for.
+#
+# Every app is listed, but nothing downloads until you name it: `mise install cadcraft cadcraft-cli`.
+# (A bare `mise install` still installs them all.)
+
+[settings]
+# Don't install missing tools behind your back: not when .mcp.json starts a server with
+# `mise exec`, not on `mise run`, and not when a shell can't find a command.
+exec_auto_install = false
+task.run_auto_install = false
+not_found_auto_install = false
+
+[tool_alias]
+cadcraft-cli = "github:storytold/cadcraft"
+cadcraft = "github:storytold/cadcraft"
+deckcraft-cli = "github:storytold/deckcraft"
+deckcraft = "github:storytold/deckcraft"
+designcraft-cli = "github:storytold/designcraft"
+designcraft = "github:storytold/designcraft"
+effectcraft-cli = "github:storytold/effectcraft"
+effectcraft = "github:storytold/effectcraft"
+figcraft-cli = "github:storytold/figcraft"
+figcraft = "github:storytold/figcraft"
+filmcraft-cli = "github:storytold/filmcraft"
+filmcraft = "github:storytold/filmcraft"
+gridcraft-cli = "github:storytold/gridcraft"
+gridcraft = "github:storytold/gridcraft"
+lightcraft-cli = "github:storytold/lightcraft"
+lightcraft = "github:storytold/lightcraft"
+pdfcraft-cli = "github:storytold/pdfcraft"
+pdfcraft = "github:storytold/pdfcraft"
+photocraft-cli = "github:storytold/photocraft"
+photocraft = "github:storytold/photocraft"
+soundcraft-cli = "github:storytold/soundcraft"
+soundcraft = "github:storytold/soundcraft"
+vectorcraft-cli = "github:storytold/vectorcraft"
+vectorcraft = "github:storytold/vectorcraft"
+wordcraft-cli = "github:storytold/wordcraft"
+wordcraft = "github:storytold/wordcraft"
+
+[tools]
+cadcraft-cli = { version = "0.13.0", asset_pattern = "cadcraft-cli-*-macos-universal.zip", os = ["macos"] }
+cadcraft = { version = "0.13.0", asset_pattern = "cadcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+deckcraft-cli = { version = "0.11.1", asset_pattern = "deckcraft-cli-*-macos-universal.zip", os = ["macos"] }
+deckcraft = { version = "0.11.1", asset_pattern = "deckcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+designcraft-cli = { version = "0.13.0", asset_pattern = "designcraft-cli-*-macos-universal.zip", os = ["macos"] }
+designcraft = { version = "0.13.0", asset_pattern = "designcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+effectcraft-cli = { version = "0.17.0", asset_pattern = "effectcraft-cli-*-macos-universal.zip", os = ["macos"] }
+effectcraft = { version = "0.17.0", asset_pattern = "effectcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+figcraft-cli = { version = "0.11.2", asset_pattern = "figcraft-cli-*-macos-universal.zip", os = ["macos"] }
+figcraft = { version = "0.11.2", asset_pattern = "figcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+filmcraft-cli = { version = "0.13.0", asset_pattern = "filmcraft-cli-*-macos-universal.zip", os = ["macos"] }
+filmcraft = { version = "0.13.0", asset_pattern = "filmcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+gridcraft-cli = { version = "0.12.1", asset_pattern = "gridcraft-cli-*-macos-universal.zip", os = ["macos"] }
+gridcraft = { version = "0.12.1", asset_pattern = "gridcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+lightcraft-cli = { version = "0.14.0", asset_pattern = "lightcraft-cli-*-macos-universal.zip", os = ["macos"] }
+lightcraft = { version = "0.14.0", asset_pattern = "lightcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+pdfcraft-cli = { version = "0.14.0", asset_pattern = "pdfcraft-cli-*-macos-universal.zip", os = ["macos"] }
+pdfcraft = { version = "0.14.0", asset_pattern = "pdfcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+photocraft-cli = { version = "0.16.0", asset_pattern = "photocraft-cli-*-macos-universal.zip", os = ["macos"] }
+photocraft = { version = "0.16.0", asset_pattern = "photocraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+soundcraft-cli = { version = "0.13.1", asset_pattern = "soundcraft-cli-*-macos-universal.zip", os = ["macos"] }
+soundcraft = { version = "0.13.1", asset_pattern = "soundcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+vectorcraft-cli = { version = "0.17.0", asset_pattern = "vectorcraft-cli-*-macos-universal.zip", os = ["macos"] }
+vectorcraft = { version = "0.17.0", asset_pattern = "vectorcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
+wordcraft-cli = { version = "0.11.0", asset_pattern = "wordcraft-cli-*-macos-universal.zip", os = ["macos"] }
+wordcraft = { version = "0.11.0", asset_pattern = "wordcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }

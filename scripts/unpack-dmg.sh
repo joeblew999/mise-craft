@@ -1,0 +1,16 @@
+#!/bin/sh
+# mise postinstall for a tool downloaded as a macOS DMG. mise saves the DMG without unpacking it,
+# so copy the .app bundle out of the image and remove the image.
+set -e
+cd "$MISE_TOOL_INSTALL_PATH"
+dmg=$(ls) # the download is the only file in the install directory
+mnt=$(mktemp -d)
+hdiutil attach -quiet -nobrowse -readonly -mountpoint "$mnt" "$dmg"
+app=$(basename "$mnt"/*.app)
+ditto "$mnt/$app" "$app"
+hdiutil detach -quiet "$mnt"
+rmdir "$mnt"
+rm "$dmg"
+# Register the app with LaunchServices: `<app>-cli mcp --launch` opens it by name (`open -a`),
+# which can't find an app outside /Applications that macOS has never seen.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app"
