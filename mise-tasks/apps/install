@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Install Craft apps by name, each with its CLI: `mise run apps:install cadcraft vectorcraft`. Undo with apps:uninstall."
+#USAGE arg "<app>" var=#true help="An app from mise.toml, such as cadcraft"
+set -euo pipefail
+for app in $usage_app; do
+  mise install "$app" "$app-cli"
+done

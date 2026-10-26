@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#MISE description="Uninstall Craft apps by name, every installed version of the app and its CLI, and unregister the apps from macOS: `mise run apps:uninstall cadcraft`."
+#USAGE arg "<app>" var=#true help="An app from mise.toml, such as cadcraft"
+set -euo pipefail
+lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+installs=${MISE_DATA_DIR:-$HOME/.local/share/mise}/installs
+for app in $usage_app; do
+  # Undo scripts/unpack-dmg.sh's registration before the .app is deleted.
+  for version in "$installs/$app"/*; do
+    [ -d "$version" ] && [ ! -L "$version" ] || continue
+    for bundle in "$version"/*.app; do
+      [ -d "$bundle" ] && "$lsregister" -u "$bundle" && echo "unregistered $bundle"
+    done
+  done
+  mise uninstall --all "$app" "$app-cli"
+done

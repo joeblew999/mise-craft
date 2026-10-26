@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+#MISE description="Add this repo's MCP servers (from .mcp.json) to Claude Desktop. Quit Claude Desktop first; undo with desktop:uninstall."
+set -euo pipefail
+root=$(cd "$(dirname "$0")/../.." && pwd)
+config=${CLAUDE_DESKTOP_CONFIG:-"$HOME/Library/Application Support/Claude/claude_desktop_config.json"}
+if [ -z "${CLAUDE_DESKTOP_CONFIG:-}" ] && pgrep -x Claude >/dev/null; then
+  echo "Quit Claude Desktop first: it rewrites its config while running and could drop this change." >&2
+  exit 1
+fi
+[ -f "$config" ] || { echo "No Claude Desktop config at $config. Open Claude Desktop once first." >&2; exit 1; }
+
+# The servers in .mcp.json, rewritten for Claude Desktop, which starts them outside this repo with a
+# minimal PATH: mise by its full path, and `-C <repo>` so mise uses this repo's mise.toml (and runs
+# the server from the repo). That `-C <repo>` is also how desktop:uninstall finds our entries.
+ours=$(jq --arg mise "$(command -v mise)" --arg root "$root" \
+  '.mcpServers | map_values(.command = $mise | .args = ["-C", $root] + .args)' "$root/.mcp.json")
+
+clash=$(jq -r --argjson ours "$ours" --arg root "$root" \
+  '(.mcpServers // {}) | to_entries[] | select(.key | in($ours)) | select(.value.args[0:2] != ["-C", $root]) | .key' "$config")
+if [ -n "$clash" ]; then
+  echo "Claude Desktop already has servers this repo didn't add:" $clash >&2
+  exit 1
+fi
+
+# printf without a trailing newline: Claude Desktop writes the file without one.
+printf '%s' "$(jq --argjson ours "$ours" '.mcpServers = ((.mcpServers // {}) + $ours)' "$config")" >"$config"
+jq -r --arg root "$root" '.mcpServers | to_entries[] | select(.value.args[0:2] == ["-C", $root]) | "added \(.key)"' "$config"
+echo "Open Claude Desktop to load them."

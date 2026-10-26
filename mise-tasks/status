@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#MISE description="Show each Craft app: pinned version, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code (.mcp.json) and Claude Desktop."
+set -euo pipefail
+root=$(cd "$(dirname "$0")/.." && pwd)
+desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+tools=$(mise ls --json 2>/dev/null)
+code_servers=$(jq -r '.mcpServers | keys[]' "$root/.mcp.json")
+desktop_servers=$([ -f "$desktop" ] && jq -r --arg root "$root" \
+  '(.mcpServers // {}) | to_entries[] | select(.value.args[0:2] == ["-C", $root]) | .key' "$desktop" || true)
+
+installed() { [ "$(jq -r --arg t "$1" '.[$t][0].installed // false' <<<"$tools")" = true ] && echo yes || echo -; }
+servers() { grep -E "^$1(-app)?$" <<<"$2" | tr '\n' ' ' || true; }
+
+printf '%-12s %-8s %-4s %-4s %-8s %-28s %s\n' APP VERSION CLI APP RUNNING "CLAUDE CODE" "CLAUDE DESKTOP"
+apps=$(jq -r --arg config "$root/mise.toml" \
+  'to_entries[] | select(.value[0].source.path == $config) | .key | select(endswith("-cli")) | rtrimstr("-cli")' <<<"$tools")
+for app in $apps; do
+  version=$(jq -r --arg t "$app" '.[$t][0].requested_version' <<<"$tools")
+  bundle=$(ls -d "$(jq -r --arg t "$app" '.[$t][0].install_path' <<<"$tools")"/*.app 2>/dev/null | head -1 || true)
+  running=-
+  [ -n "$bundle" ] && pgrep -f "$bundle/Contents/MacOS/" >/dev/null && running=yes
+  printf '%-12s %-8s %-4s %-4s %-8s %-28s %s\n' "$app" "$version" "$(installed "$app-cli")" "$(installed "$app")" \
+    "$running" "$(servers "$app" "$code_servers")" "$(servers "$app" "$desktop_servers")"
+done
