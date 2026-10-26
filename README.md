@@ -4,11 +4,30 @@ Install the [Craft App Suite](https://getartcraft.com/apps) with [mise](https://
 drive the apps from AI agents over MCP, while you watch the desktop app update live. Everything is
 controlled from this repo's mise tasks, and everything it sets up has a task that removes it.
 
-> **Status:** CADCraft, DesignCraft, EffectCraft and VectorCraft work on macOS: CLI, desktop app,
-> and MCP servers both headless and driving the live app, in Claude Code. The Claude Desktop tasks
-> are tested on a copy of its config (servers start as Claude Desktop starts them, and uninstall
-> restores the file exactly) but not yet loaded in Claude Desktop itself. The other 9 apps are
-> listed and locked but not yet checked.
+> **Status:** CADCraft, DesignCraft, EffectCraft, GridCraft and VectorCraft work on macOS: CLI,
+> desktop app, and MCP servers both headless and driving the live app, in Claude Code. The Claude
+> Desktop tasks are tested on a copy of its config (servers start as Claude Desktop starts them,
+> and uninstall restores the file exactly) but not yet loaded in Claude Desktop itself. The other 8
+> apps are listed and locked but not yet checked.
+
+## Get started
+
+You need macOS, [mise](https://mise.jdx.dev/getting-started.html) and
+[Claude Code](https://code.claude.com/docs).
+
+```sh
+git clone https://github.com/joeblew999/mise-craft
+cd mise-craft
+mise trust                     # mise asks before it uses a repo's config
+mise install jq                # the tasks use it
+mise run status                # nothing is installed yet
+mise run cadcraft:install      # the CADCraft CLI and desktop app, about 120 MB to download
+mise run cadcraft:watch        # optional: let Claude drive the CADCraft window
+claude                         # approve the project's MCP servers when asked
+```
+
+Then ask Claude to draw something in CADCraft. mise downloads through GitHub's API; if it hits
+GitHub's rate limit, run `export GITHUB_TOKEN=$(gh auth token)` first.
 
 ## Use it
 
@@ -20,8 +39,9 @@ mise run vectorcraft:install
 ```
 
 Then open this repo in Claude Code. [.mcp.json](.mcp.json) gives Claude a headless MCP server for
-each checked app (`cadcraft`, `designcraft`, `effectcraft`, `vectorcraft`), started through mise so
-it uses the pinned version. Headless servers work on a document with no window, so no app opens.
+each checked app (`cadcraft`, `designcraft`, `effectcraft`, `gridcraft`, `vectorcraft`), started
+through mise so it uses the pinned version. Headless servers work on a document with no window, so
+no app opens.
 
 To watch Claude work in a desktop app, switch on that app's live server:
 
@@ -35,6 +55,7 @@ mise run cadcraft:unwatch    # takes it out again
 | `cadcraft-app` | CADCraft on port 7979 | At the first tool call (`--lazy --launch`) |
 | `designcraft-app` | DesignCraft on port 7981 | When the server starts |
 | `effectcraft-app` | EffectCraft on port 7982 | When the server starts |
+| `gridcraft-app` | GridCraft on port 7985 | When the server starts |
 | `vectorcraft-app` | VectorCraft on port 7990 | When the server starts |
 
 The live servers are defined in [mcp-live.json](mcp-live.json). A watch is added in Claude Code's
@@ -103,8 +124,8 @@ nothing, and [mise.lock](mise.lock) pins every download's SHA-256 (all 26 match 
 | CADCraft | `--connect HOST:PORT [--lazy] [--launch]` | Yes |
 | DesignCraft | `--connect PORT` or `HOST:PORT` | No |
 | EffectCraft | `--bridge PORT` | No |
+| GridCraft | `--connect PORT` | No |
 | VectorCraft | `--connect ADDR` (or `--headless`) | No |
-| GridCraft (not yet checked) | `--connect PORT` | ? |
 | FigCraft (not yet checked) | `--attach PORT` | ? |
 
 ## The apps
@@ -121,7 +142,7 @@ Versions and CLI builds are as published on each repo's latest release (checked 
 | EffectCraft | [storytold/effectcraft](https://github.com/storytold/effectcraft) | 0.17.0 | 7982 | ✓ | macOS universal |
 | FigCraft | [storytold/figcraft](https://github.com/storytold/figcraft) | 0.11.2 | 7983 | | macOS universal |
 | FilmCraft | [storytold/filmcraft](https://github.com/storytold/filmcraft) | 0.13.0 | 7984 | | macOS universal |
-| GridCraft | [storytold/gridcraft](https://github.com/storytold/gridcraft) | 0.12.1 | 7985 | | macOS universal |
+| GridCraft | [storytold/gridcraft](https://github.com/storytold/gridcraft) | 0.12.1 | 7985 | ✓ | macOS universal |
 | LightCraft | [storytold/lightcraft](https://github.com/storytold/lightcraft) | 0.14.0 | 7986 | | macOS universal |
 | PdfCraft | [storytold/pdfcraft](https://github.com/storytold/pdfcraft) | 0.14.0 | 7987 | | macOS universal, Linux x86_64, Linux aarch64 |
 | PhotoCraft | [storytold/photocraft](https://github.com/storytold/photocraft) | 0.16.0 | 7988 | | macOS universal |
@@ -135,11 +156,11 @@ and sets the apps up for agents.
 
 ## Plan
 
-1. ~~CADCraft, DesignCraft, EffectCraft and VectorCraft: installed by mise, headless and live MCP
-   servers connected in Claude Code, and work made over MCP showing up in the running apps.~~
-   Next: load them in Claude Desktop itself.
-2. The other 9 apps, one at a time: work out each app's MCP options, add its two servers to
-   `.mcp.json`, and check it end to end.
+1. ~~CADCraft, DesignCraft, EffectCraft, GridCraft and VectorCraft: installed by mise, headless
+   and live MCP servers connected in Claude Code, and work made over MCP showing up in the running
+   apps.~~ Next: load them in Claude Desktop itself.
+2. The other 8 apps, one at a time: work out each app's MCP options, add its headless server to
+   `.mcp.json` and its live server to `mcp-live.json`, and check it end to end.
 3. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
    like everything else. They need the servers reachable over HTTPS, so this means a bridge, a
    tunnel and authentication.
@@ -156,6 +177,8 @@ and sets the apps up for agents.
   because their MCP servers can't open the app on demand. Only CADCraft waits for the first tool
   call.
 - **Claude Desktop gets only the headless servers** for now; watching an app there isn't wired up.
+- **GridCraft's `screenshot` needs its window visible**: a hidden window draws no frames, so the call
+  times out. Bring GridCraft to the front first.
 - **EffectCraft's window screenshots are large** (about 28 MB at full size); its `screenshot` tool
   takes `max_side` to scale them down.
 - **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile; name

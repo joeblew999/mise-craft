@@ -2,19 +2,49 @@
   "mcpServers": {
     "cadcraft": {
       "command": "mise",
-      "args": ["exec", "--", "cadcraft-cli", "mcp"]
+      "args": [
+        "exec",
+        "--",
+        "cadcraft-cli",
+        "mcp"
+      ]
     },
     "designcraft": {
       "command": "mise",
-      "args": ["exec", "--", "designcraft-cli", "mcp"]
+      "args": [
+        "exec",
+        "--",
+        "designcraft-cli",
+        "mcp"
+      ]
     },
     "effectcraft": {
       "command": "mise",
-      "args": ["exec", "--", "effectcraft-cli", "mcp"]
+      "args": [
+        "exec",
+        "--",
+        "effectcraft-cli",
+        "mcp"
+      ]
+    },
+    "gridcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "gridcraft-cli",
+        "mcp"
+      ]
     },
     "vectorcraft": {
       "command": "mise",
-      "args": ["exec", "--", "vectorcraft-cli", "mcp", "--headless"]
+      "args": [
+        "exec",
+        "--",
+        "vectorcraft-cli",
+        "mcp",
+        "--headless"
+      ]
     }
   }
 }

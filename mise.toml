@@ -143,6 +143,14 @@ run = "mise run apps:install filmcraft"
 description = "Uninstall FilmCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall filmcraft"
 
+[tasks."gridcraft:watch"]
+description = "Let Claude drive the GridCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with gridcraft:unwatch."
+run = "mise run apps:watch gridcraft"
+
+[tasks."gridcraft:unwatch"]
+description = "Remove GridCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch gridcraft"
+
 [tasks."gridcraft:install"]
 description = "Install GridCraft 0.12.1: its CLI (gridcraft-cli, with the MCP server) and desktop app. Undo with gridcraft:uninstall."
 run = "mise run apps:install gridcraft"
