@@ -179,9 +179,11 @@ CLAUDE.md                    read by Claude Code; imports this README
 These rules are for people and agents alike; Claude Code reads this README through
 [CLAUDE.md](CLAUDE.md).
 
-- **This README is the only documentation**, and each fact is stated once. CLAUDE.md only imports
-  it. Don't add other Markdown files, and never make memory files: agents keep no notes about this
-  repo anywhere else, such as Claude Code's memory folder.
+- **This README documents the repo**, and each fact is stated once. CLAUDE.md only imports it.
+  The only other Markdown is in `docs/`: [docs/problems.md](docs/problems.md) tracks every problem
+  found, and [docs/design-time-vs-runtime.md](docs/design-time-vs-runtime.md) holds the open design
+  work. Never make memory files: agents keep no notes about this repo anywhere else, such as Claude
+  Code's memory folder.
 - **This repo controls everything it puts on the machine.** Anything created outside the repo
   folder is created by mise or a mise task, and has a matching task that removes it. Add the undo
   task in the same change as the do task, and add a row to
