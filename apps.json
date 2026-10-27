@@ -77,6 +77,37 @@
         "cli_bin": "deckcraft-cli",
         "app": "deckcraft-*-macos-universal.dmg"
       },
+      "bundle": {
+        "name": "DeckCraft.app",
+        "executable": "DeckCraft"
+      },
+      "mcp": {
+        "port": 7980,
+        "live": [
+          "--connect",
+          "{port}"
+        ],
+        "usage": "deckcraft-cli mcp [--connect PORT] [--sample] [--automation-read-root DIR] [--automation-write-root DIR]",
+        "opens_with": "no presentation",
+        "first_step": {
+          "tool": "new_presentation",
+          "arguments": {}
+        },
+        "live_only_tools": [],
+        "look": [
+          "render_slide",
+          "screenshot"
+        ],
+        "file_roots": true
+      },
+      "checked": {
+        "version": "0.11.1",
+        "on": "2026-10-27"
+      },
+      "notes": [
+        "`deckcraft-cli --help` lists mcp without its options; `deckcraft-cli mcp --help` shows them.",
+        "--connect takes PORT or host:port."
+      ],
       "upstream": {
         "about": "Presentations and slide shows: an open-source, clean-room reimplementation of Microsoft PowerPoint in pure Rust. Part of the ArtCraft Crafting Apps.",
         "latest": "0.11.1",

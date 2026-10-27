@@ -14,6 +14,21 @@
         "--launch"
       ]
     },
+    "deckcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/mcp-open-app.sh",
+        "DeckCraft",
+        "7980",
+        "deckcraft-cli",
+        "mcp",
+        "--connect",
+        "7980"
+      ]
+    },
     "designcraft-app": {
       "command": "mise",
       "args": [

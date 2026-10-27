@@ -10,6 +10,15 @@
         "mcp"
       ]
     },
+    "deckcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "deckcraft-cli",
+        "mcp"
+      ]
+    },
     "designcraft": {
       "command": "mise",
       "args": [

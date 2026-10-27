@@ -95,6 +95,14 @@ run = "mise run apps:install cadcraft"
 description = "Uninstall CADCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall cadcraft"
 
+[tasks."deckcraft:watch"]
+description = "Let Claude drive the DeckCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with deckcraft:unwatch."
+run = "mise run apps:watch deckcraft"
+
+[tasks."deckcraft:unwatch"]
+description = "Remove DeckCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch deckcraft"
+
 [tasks."deckcraft:install"]
 description = "Install DeckCraft 0.11.1: its CLI (deckcraft-cli, with the MCP server) and desktop app. Undo with deckcraft:uninstall."
 run = "mise run apps:install deckcraft"
