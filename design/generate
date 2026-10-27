@@ -4,22 +4,15 @@
 #
 # Lineage:
 #   run by   the generate task in design/mise.toml (`mise run gen` in design/ runs it, after validate)
-#   reads    design/family.json, design/apps.json
+#   reads    design/family.json, design/apps.json, design/full.jq (the merge)
 #   writes   mise.toml and servers.json at the repo root, where runtime reads them. Nothing it
 #            produces stays in design/.
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# Every app in full: family.json with the app's overrides laid over it (objects merge; arrays and
-# values replace), then {id}, {name}, {version} and {port} filled in. An app with observed is checked.
-full=$(jq -c --slurpfile fam family.json '
-  def fill($a): walk(if type == "string"
-    then gsub("\\{id\\}"; $a.id) | gsub("\\{name\\}"; $a.name) | gsub("\\{version\\}"; $a.version)
-      | gsub("\\{port\\}"; ($a.port // "" | tostring))
-    else . end);
-  ($fam[0] | del(."//")) as $f
-  | [.apps[] | . as $a | (($f * ($a.overrides // {})) | fill($a))
-     + {id, name, version, port, checked: (.observed != null)}]' apps.json)
+# Every app in full, from full.jq: family.json with the app's overrides laid over it, placeholders
+# filled in. An app with observed is checked.
+full=$(jq -c --slurpfile fam family.json -L . 'include "full"; [.apps[] | full($fam[0])]' apps.json)
 
 # One "id version name repo cli-asset app-asset" line per app, and the ids of the checked apps.
 apps=$(jq -r '.[] | "\(.id) \(.version) \(.name) \(.repo) \(.install.cli) \(.install.app)"' <<<"$full")

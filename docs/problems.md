@@ -2,36 +2,78 @@
 
 # Problems
 
-Every problem found so far. Status: **open**, **fixed**, **worked around**, **upstream** (the app's
-bug), **app behaviour** (recorded, nothing to fix here), **limit**, or **yours** (needs the owner).
+Every problem found so far, sorted by what it needs. The numbers never change, because
+`design/apps.json` refers to them. Only the first two sections need anything done.
 
-| # | Problem | Status | Fix or next step |
-|---|---|---|---|
-| 1 | mise's `latest` hides releases newer than `minimum_release_age` (resolved CADCraft to 0.12.0, not 0.13.0) | worked around | Exact versions pinned in `apps.json` |
-| 2 | mise's `http:` and `github:` backends save a DMG without unpacking it | fixed | `scripts/unpack-dmg.sh` as `postinstall` |
-| 3 | `open -a <App>` (CADCraft's `--launch`) can't find an app macOS has never registered | fixed | `unpack-dmg.sh` runs `lsregister -f`; `<app>:uninstall` runs `lsregister -u` |
-| 4 | My guard in `unpack-dmg.sh` had an apostrophe inside `${…:?…}` that broke the script | fixed | Caught by testing before commit (80ccbe0) |
-| 5 | CADCraft's first live call after `--launch` can fail with "missing or invalid control token" | upstream | Upstream #2087; the retry works. CADCraft lists it in `problems`. Report to storytold only with the owner's OK |
-| 6 | A live server run as a mise task with `depends` lost the client's first MCP messages | worked around | Live servers run through `mise exec`, never `mise run` |
-| 7 | Live servers in `.mcp.json` opened desktop apps whenever Claude Code started | fixed | Live servers moved out; `<app>:watch` adds one on request (9ddb5ce) |
-| 8 | Claude Code merges `disabledMcpjsonServers` across settings files, so a project-wide "off" can't be turned back on per person | worked around | Watch tasks instead of settings |
-| 9 | watch/unwatch replaced or removed same-named Claude Code servers this repo didn't add | fixed | `MISE_CRAFT_WATCH` marker (3a3c77c) |
-| 10 | Claude Desktop rewrites its config while it runs, which could drop our change | worked around | `desktop:*` refuse while it's open |
-| 11 | A jq round trip added a final newline Claude Desktop's config doesn't have | fixed | Tasks write without it; uninstall restores the file byte for byte |
-| 12 | A checked app that isn't installed shows as a failed server in Claude Code (`.mcp.json` lists every checked app) | fixed | `.mcp.json` is now a runtime file written by `claude:sync` for the apps installed here, not committed; `generate` writes the neutral `servers.json` instead |
-| 13 | Headless MCP servers can read and write any file you can (no `--automation-read-root/--automation-write-root` passed) | **open** | Owner to decide whether to confine them, and to which folders |
-| 14 | GridCraft's `screenshot` times out when its window is hidden | app behaviour | Bring GridCraft to the front first. GridCraft lists it in `problems` |
-| 15 | FigCraft's window capture fails when its window is hidden | app behaviour | Without `window`, `screenshot` renders the page instead. FigCraft lists it in `problems` |
-| 16 | EffectCraft's window screenshots are about 28 MB | app behaviour | Use `max_side` to scale them down. EffectCraft lists it in `problems` |
-| 17 | VectorCraft's MCP server connects to port 7979 by default, which can be CADCraft's | worked around | VectorCraft's `overrides` give its headless server `--headless`; it lists the problem in `problems` |
-| 18 | A port rule based on an app's place in the list would shift every later port when an app is added | fixed | Ports written per app in `apps.json` (c7b4300) |
-| 19 | zsh word splitting and globbing broke two of my generator scripts | fixed | Generators run under bash |
-| 20 | `mise install --locked` also checks the user's global mise tools, which aren't in this lockfile | limit | Name the tools: `mise install --locked cadcraft cadcraft-cli` |
-| 21 | Every mise command warns about `experimental_monorepo_root` in another Claude session's leftover `mise.toml` | yours | Outside this repo: delete `/private/tmp/claude-501/…mise-cloudflare/…/scratchpad/mono/mise.toml` |
-| 22 | GitHub API rate limits; mise ignores `github.credential_command` in a project file | limit | Global `credential_command` or `GITHUB_TOKEN` (README) |
-| 23 | A safety check blocked deleting my test clone | yours | Delete `/private/tmp/claude-501/…/scratchpad/friend` |
-| 24 | DeckCraft's `--help` lists `mcp` without its options | app behaviour | `deckcraft-cli mcp --help` shows them. DeckCraft lists it in `problems` |
-| 25 | A runtime install (`<app>:install`) has mise rewrite `mise.lock`, a design-time file: "mise lock ✓ … targets checked" appears in install logs | fixed | Installs run `mise install --locked`, which installs exactly what `mise.lock` names and never writes it (measured: a plain install of something already locked doesn't rewrite it either; mise writes the lock when an entry is missing) |
+## Open: needs doing
 
-App behaviours that aren't problems (what a fresh app holds, tools only the live server has, …) are
-structured fields in `apps.json`, not entries here.
+- **13. Agents can read and write any file you can.** The headless MCP servers run with your
+  full file access. Four of the CLIs can be confined to chosen folders
+  (`--automation-read-root` / `--automation-write-root`), but this repo doesn't do it yet.
+  *Next: the owner picks the folders.*
+- **5. CADCraft's first live call can fail** with "missing or invalid control token", right after
+  `--launch` opens the app: its bridge reads the old token before the app writes a new one. Asking
+  again works, and the error says so. It's CADCraft's bug (upstream #2087).
+  *Next: report it to storytold, only with the owner's OK.*
+
+## Yours to do, outside this repo
+
+- **21. Every mise command prints a warning** about `experimental_monorepo_root`, from a
+  `mise.toml` another Claude session left behind. *Delete
+  `/private/tmp/claude-501/…mise-cloudflare/…/scratchpad/mono/mise.toml`.*
+- **23. A test folder is left over**, because a safety check stopped me deleting it. *Delete
+  `/private/tmp/claude-501/…/scratchpad/friend`.*
+
+## Not bugs: how particular apps behave
+
+Each app lists these by number in its `problems` in `design/apps.json`.
+
+- **14. GridCraft's `screenshot` times out when its window is hidden**, because a hidden window
+  draws nothing. Bring GridCraft to the front first.
+- **15. FigCraft's window capture fails when its window is hidden.** Without `window`, its
+  `screenshot` renders the page instead.
+- **16. EffectCraft's window screenshots are about 28 MB.** Its `screenshot` takes `max_side` to
+  make them smaller.
+- **17. VectorCraft's MCP server connects to port 7979 unless told otherwise**, which can be
+  CADCraft's. Its headless server is started with `--headless` (in its `overrides`).
+- **24. DeckCraft's `--help` lists `mcp` without its options.** `deckcraft-cli mcp --help` shows
+  them.
+
+## Limits to live with
+
+- **20. `mise install --locked` with no tool names also checks your global mise tools**, which
+  aren't in this repo's lockfile. Name the tools: `mise install --locked cadcraft cadcraft-cli`.
+- **22. GitHub limits how often mise may download through its API.** mise ignores
+  `github.credential_command` in a project file, so set it in your global mise config or export
+  `GITHUB_TOKEN`.
+
+## Fixed
+
+Kept so they don't happen again.
+
+- **1. mise's `latest` lagged behind new releases** (its `minimum_release_age`). Versions are pinned
+  exactly.
+- **2. mise saved the desktop apps' DMGs without unpacking them.** `scripts/unpack-dmg.sh` copies
+  the app out after install.
+- **3. `open -a <App>` couldn't find an app macOS had never registered** (CADCraft's `--launch`
+  uses it). The unpack step registers each app; uninstall unregisters it.
+- **4. An apostrophe in my own guard broke `unpack-dmg.sh`.** Caught by testing before commit.
+- **6. Running a live server as a mise task with `depends` lost Claude's first messages.** Live
+  servers run through `mise exec` instead.
+- **7. Live servers in `.mcp.json` opened desktop apps whenever Claude Code started.** They're
+  added only on request, with `<app>:watch`.
+- **8. Claude Code can't switch a project server back on for one person** once it's switched off
+  for everyone (it merges `disabledMcpjsonServers` across files). Hence the watch tasks.
+- **9. watch and unwatch could remove a server of the same name that wasn't ours.** They now mark
+  their own with `MISE_CRAFT_WATCH`.
+- **10. Claude Desktop rewrites its config while it's open**, which could drop our change. Its
+  tasks refuse to run while it's open.
+- **11. Rewriting Claude Desktop's config added a final newline it doesn't have.** Its tasks now
+  restore the file byte for byte.
+- **12. An app that wasn't installed showed as a failed server in Claude Code.** `.mcp.json` is now
+  written per machine, for the apps actually installed.
+- **18. Working out ports from an app's place in the list would shift them when an app is added.**
+  Each checked app's port is written down.
+- **19. zsh broke two of my generator scripts** (word splitting, globbing). They run under bash.
+- **25. Installing an app could rewrite `mise.lock`.** Installs run with `--locked`, so they never
+  write it.
