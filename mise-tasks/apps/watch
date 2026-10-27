@@ -9,6 +9,7 @@
 #            for apps that can't open themselves
 #   undone   mise-tasks/apps/unwatch
 set -euo pipefail
+# Claude Code keeps its config in ~/.claude.json, or in $CLAUDE_CONFIG_DIR when that is set.
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
 # Every server watch adds carries this env var. A server of the same name without it was added by
@@ -21,7 +22,7 @@ for app in $usage_app; do
   [ -n "$server" ] || { echo "$app has no live server in servers.json: it is not checked yet" >&2; exit 1; }
   mise which "$app-cli" >/dev/null 2>&1 || { echo "$app is not installed: run mise run $app:install first" >&2; exit 1; }
   existing=$(jq -c --arg root "$root" --arg n "$name" \
-    '.projects[$root].mcpServers[$n] // empty' "$HOME/.claude.json" 2>/dev/null || true)
+    '.projects[$root].mcpServers[$n] // empty' "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null || true)
   if [ -n "$existing" ]; then
     if [ "$(jq -r --arg m "$marker" '.env[$m] // empty' <<<"$existing")" != 1 ]; then
       echo "Claude Code already has a server named $name that this repo didn't add; leaving it alone." >&2

@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#MISE description="Test this repo top to bottom, the way a friend would use it: a fresh clone of what's committed, with your global mise config and your Claude Code config switched off. Prints PASS or FAIL per step, and cleans up after itself. Run it before pushing; keep its output with `mise run task:log repo:test`."
+# Lineage:
+#   run by   `mise run repo:test`
+#   reads    this repo's last commit (it clones it, so uncommitted changes aren't tested); the
+#            Claude Desktop config, which it only copies
+#   runs     every runtime task and every design stage in the clone, with CADCraft as the app
+#   writes   only inside a temporary folder that it deletes at the end: the clone, its own mise
+#            config, and its own Claude Code config ($CLAUDE_CONFIG_DIR), so ~/.claude.json is
+#            never touched. Claude Desktop's tasks run on a copy of its config.
+#   undoes   what it adds outside that folder: mise's trust of the clone, and CADCraft, if CADCraft
+#            wasn't installed before (it downloads about 120 MB in that case)
+set -uo pipefail
+root=$(cd "$(dirname "$0")/../.." && pwd)
+work=$(cd "$(mktemp -d)" && pwd -P)
+mkdir -p "$work/mise" "$work/claude"
+export MISE_CONFIG_DIR="$work/mise" MISE_GLOBAL_CONFIG_FILE="$work/mise/config.toml"
+export CLAUDE_CONFIG_DIR="$work/claude"
+# The clone's own .mcp.json servers would otherwise wait for approval in this fresh Claude config.
+echo '{"enableAllProjectMcpServers": true}' >"$CLAUDE_CONFIG_DIR/settings.json"
+cadcraft_before=$(mise ls --installed --json cadcraft-cli 2>/dev/null | jq 'length')
+
+passed=0 failed=0
+step() {
+  local name=$1; shift
+  if "$@" >"$work/step.log" 2>&1; then
+    echo "PASS  $name"; passed=$((passed + 1))
+  else
+    echo "FAIL  $name"; failed=$((failed + 1))
+    tail -5 "$work/step.log" | sed 's/^/      /'
+  fi
+}
+# config:build must stop on each of these mistakes with its message, and generate nothing.
+broken() {
+  cp design/apps.json "$work/apps.good"
+  jq "$2" "$work/apps.good" >design/apps.json
+  step "the build stops $1" sh -c '! mise -C design run config:build >"$1" 2>&1 && grep -qF -- "$2" "$1"' _ "$work/build.log" "$3"
+  cp "$work/apps.good" design/apps.json
+}
+cleanup() {
+  cd "$work/repo" 2>/dev/null && {
+    [ "$cadcraft_before" = 0 ] && mise run cadcraft:uninstall >/dev/null 2>&1
+    mise trust --untrust >/dev/null 2>&1
+  }
+  cd / && rm -rf "$work"
+}
+trap cleanup EXIT
+
+git clone -q "$root" "$work/repo" || { echo "FAIL  clone"; exit 1; }
+cd "$work/repo"
+echo "      testing $(git log --oneline -1)"
+
+# Runtime, as the README's Get started section does it.
+step "mise trust" mise trust
+step "mise install jq" mise install jq
+step "no .mcp.json before any install" test ! -e .mcp.json
+step "apps:status lists all 13 apps" sh -c 'test "$(mise run apps:status 2>/dev/null | grep -c -E "^[a-z]+craft ")" = 13'
+step "cadcraft:install, locked" mise run cadcraft:install
+step ".mcp.json has the installed app" jq -e '.mcpServers.cadcraft' .mcp.json
+step ".mcp.json is ignored by git" git check-ignore -q .mcp.json
+step "installing left mise.lock alone" git diff --quiet -- mise.lock
+step "CADCraft's headless server connects" sh -c 'claude mcp list 2>&1 | grep -q "^cadcraft: .*Connected"'
+step "cadcraft:watch" mise run cadcraft:watch
+step "CADCraft's live server connects" sh -c 'claude mcp list 2>&1 | grep -q "^cadcraft-app: .*Connected"'
+step "apps:status shows the live server" sh -c 'mise run apps:status 2>/dev/null | grep -q "^cadcraft .*cadcraft-app"'
+step "cadcraft:unwatch" mise run cadcraft:unwatch
+step "the live server is gone" sh -c '! claude mcp list 2>&1 | grep -q "^cadcraft-app:"'
+step "watch refuses an app that isn't installed" sh -c '! mise run wordcraft:watch'
+
+# Design time, in stage order.
+step "stage 1, upstream:fetch" sh -c 'mise -C design run upstream:fetch >"$1" 2>&1' _ "$work/fetch.out"
+step "every pin is the latest release" sh -c 'grep -E "^[a-z]+craft " "$1" | awk "\$2 != \$3 { print; bad = 1 } END { exit bad }"' _ "$work/fetch.out"
+step "stage 2, app:check cadcraft" mise -C design run app:check cadcraft
+step "stages 1 and 2 wrote nothing" git diff --quiet
+step "stage 4, registry:validate" mise -C design run registry:validate
+broken "on a checked version that isn't exact" '.apps[0].checked = "latest"' "cadcraft: checked latest is not an exact version"
+broken "on a checked app without a port" '.apps[1] |= del(.port)' "deckcraft: checked but has no port"
+broken "on two apps with one port" '.apps[2].port = 7979' "port 7979 is used by more than one app"
+broken "on an override family.json lacks" '.apps[3].overrides.colour = 1' "effectcraft: overrides colour, which family.json does not have"
+broken "on a misspelled override" '.apps[0].overrides.mcp.liv = []' "cadcraft: overrides mcp.liv, which family.json does not have"
+broken "on a version that isn't exact" '.apps[5].version = "0.13"' "filmcraft: version 0.13 is not exact"
+step "the broken builds generated nothing" git diff --quiet
+step "stages 4 to 6 run in order" sh -c 'mise -C design run lock:update 2>&1 | grep -o "^\[[a-z:]*\]" | uniq | tr "\n" " " | grep -q "\[registry:validate\] \[config:generate\] \[lock:update\]"'
+step "rebuilding changes nothing" git diff --quiet
+
+# Claude Desktop, on a copy of its config.
+desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+if [ -f "$desktop" ]; then cp "$desktop" "$work/desktop.orig"; else printf '{"mcpServers":{}}' >"$work/desktop.orig"; fi
+cp "$work/desktop.orig" "$work/desktop.json"
+step "claude-desktop:install" env CLAUDE_DESKTOP_CONFIG="$work/desktop.json" mise run claude-desktop:install
+step "Claude Desktop's config has CADCraft" jq -e '.mcpServers.cadcraft' "$work/desktop.json"
+step "claude-desktop:uninstall" env CLAUDE_DESKTOP_CONFIG="$work/desktop.json" mise run claude-desktop:uninstall
+step "Claude Desktop's config is back, byte for byte" cmp "$work/desktop.json" "$work/desktop.orig"
+
+# The repo's own rules.
+step "every script parses" sh -c 'for f in design/scripts/[0-9]-* mise-tasks/*/* scripts/*.sh; do bash -n "$f" || exit 1; done'
+step "every file states its lineage" sh -c 'for f in $(git ls-files); do head -8 "$f" | grep -q -i -E "lineage|generated by" || { echo "no lineage: $f"; exit 1; }; done'
+
+echo "$passed passed, $failed failed"
+[ "$failed" = 0 ]

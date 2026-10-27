@@ -7,6 +7,7 @@
 #   runs     `claude mcp remove --scope local`, which edits this project's entry in ~/.claude.json
 #   undoes   mise-tasks/apps/watch
 set -euo pipefail
+# Claude Code keeps its config in ~/.claude.json, or in $CLAUDE_CONFIG_DIR when that is set.
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
 # apps:watch marks every server it adds with this env var; anything without it isn't ours.
@@ -14,7 +15,7 @@ marker=MISE_CRAFT_WATCH
 for app in $usage_app; do
   name="$app-app"
   existing=$(jq -c --arg root "$root" --arg n "$name" \
-    '.projects[$root].mcpServers[$n] // empty' "$HOME/.claude.json" 2>/dev/null || true)
+    '.projects[$root].mcpServers[$n] // empty' "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null || true)
   if [ -z "$existing" ]; then
     echo "$name wasn't added"
   elif [ "$(jq -r --arg m "$marker" '.env[$m] // empty' <<<"$existing")" != 1 ]; then

@@ -44,6 +44,7 @@ mise config (mise ignores it in a project file).
 | `claude-code:sync` | Writes `.mcp.json` with the headless server of each checked app installed here | (rerun after any change) |
 | `claude-desktop:install` | Makes Claude Desktop's servers from this repo match `.mcp.json` | `claude-desktop:uninstall` |
 | `claude-desktop:uninstall` | Removes exactly those servers | `claude-desktop:install` |
+| `repo:test` | Tests the repo top to bottom in a fresh clone of the last commit, with your global mise config and your Claude Code config switched off, and cleans up after itself | (nothing left behind) |
 
 **MCP servers in Claude Code.** `.mcp.json` holds a headless server for each checked app installed
 on this machine: it works on a document with no window, so no app opens. It's a runtime file, not
@@ -179,6 +180,7 @@ mise-tasks/                      runtime, run by you: mise run <task>
   apps/watch, unwatch            servers.json → claude mcp add-json / remove → ~/.claude.json
   claude-code/sync               claude-code:sync: servers.json + what's installed → .mcp.json
   claude-desktop/install, uninstall  .mcp.json → Claude Desktop's config
+  repo/test                      repo:test: clones the last commit and runs every task and stage in it
 scripts/                         runtime, run by mise and Claude Code, never by hand
   dmg-unpack.sh                  run by mise as each desktop app's postinstall
   app-open.sh                    run by Claude Code as part of a live server's command
@@ -263,7 +265,7 @@ These rules are for people and agents alike; Claude Code reads this README throu
 - **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out,
   never guessed: an app's `checked`, `port` and `overrides` once it's checked end to end.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
-  first. For an app, that's install, `mise -C design run app:check <app>`, and a tool call that shows
+  first. Commit, then run `mise run task:log repo:test`, and push only if every step passes. For an app, that's install, `mise -C design run app:check <app>`, and a tool call that shows
   up in the app; then record its `checked`, `port` and `overrides` in `design/apps.json`, how it
   behaves in docs/problems.md, and run `mise -C design run config:build`.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
