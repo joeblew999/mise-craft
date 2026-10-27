@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Design-time stage 4, registry:validate: stop the build before anything is generated if
+# design/family.json or design/apps.json is wrong. Each rule below prints what's wrong; if any rule
+# prints anything, this exits non-zero and config:generate (stage 5) doesn't run.
+#
+# Lineage:
+#   run by   registry:validate in design/mise.toml; config:generate depends on it, so
+#            `mise run config:build` in design/ runs it first
+#   reads    design/family.json, design/apps.json
+#   writes   nothing
+set -euo pipefail
+cd "$(dirname "$0")"
+problems=$(mktemp)
+trap 'rm -f "$problems"' EXIT
+{
+  # Every version must be exact, like 0.13.0, and so must every checked version.
+  jq -r '.apps[] | select(.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
+    | "\(.id): version \(.version) is not exact"' apps.json
+  jq -r '.apps[] | select(.checked) | select(.checked | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
+    | "\(.id): checked \(.checked) is not an exact version"' apps.json
+
+  # Every checked app must have a port.
+  jq -r '.apps[] | select(.checked and .port == null)
+    | "\(.id): checked but has no port"' apps.json
+
+  # No two apps may share a port.
+  jq -r '[.apps[].port | select(.)] | group_by(.) | map(select(length > 1) | .[0])[]
+    | "port \(.) is used by more than one app"' apps.json
+
+  # An override may only change a field family.json has, so a misspelled one can't be ignored silently.
+  jq -r --slurpfile fam family.json '.apps[] | .id as $id | (.overrides // {})
+    | paths(type != "object") | select(all(.[]; type == "string"))
+    | select(. as $p | $fam[0] | getpath($p) == null)
+    | "\($id): overrides \(join(".")), which family.json does not have"' apps.json
+} >"$problems"
+if [ -s "$problems" ]; then
+  cat "$problems" >&2
+  exit 1
+fi

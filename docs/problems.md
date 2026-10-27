@@ -2,14 +2,16 @@
 
 # Problems
 
-Every problem found so far, sorted by what it needs. The numbers never change, because
-`design/apps.json` refers to them. Only the first two sections need anything done.
+Every problem found so far, and how particular apps behave, sorted by what it needs. The numbers
+never change. Only the first two sections need anything done.
 
 ## Open: needs doing
 
 - **13. Agents can read and write any file you can.** The headless MCP servers run with your
   full file access. Four of the CLIs can be confined to chosen folders
   (`--automation-read-root` / `--automation-write-root`), but this repo doesn't do it yet.
+  FigCraft's live server (`--attach`) refuses those options: there the app confines it, and takes
+  the same options alongside `--control`.
   *Next: the owner picks the folders.*
 - **5. CADCraft's first live call can fail** with "missing or invalid control token", right after
   `--launch` opens the app: its bridge reads the old token before the app writes a new one. Asking
@@ -26,10 +28,8 @@ Every problem found so far, sorted by what it needs. The numbers never change, b
 
 ## Not bugs: how particular apps behave
 
-Each app lists these by number in its `problems` in `design/apps.json`.
-
 - **14. GridCraft's `screenshot` times out when its window is hidden**, because a hidden window
-  draws nothing. Bring GridCraft to the front first.
+  draws nothing. Bring GridCraft to the front first (`gridcraft-cli send <port> ui.focus`).
 - **15. FigCraft's window capture fails when its window is hidden.** Without `window`, its
   `screenshot` renders the page instead.
 - **16. EffectCraft's window screenshots are about 28 MB.** Its `screenshot` takes `max_side` to
@@ -40,7 +40,11 @@ Each app lists these by number in its `problems` in `design/apps.json`.
   them.
 - **26. FilmCraft's help has no `mcp [...]` usage line**, only `mcp  MCP server on stdio (headless,
   or --bridge to the live app)`; `--bridge <127.0.0.1:PORT>` is listed among its general options.
-  `app:check` records that description as its usage.
+  `app:check` prints that description as its usage.
+- **27. Some apps open with nothing to work on**, so the first tool call must make something:
+  DeckCraft `new_presentation`; EffectCraft `command_run {"id": "comp.new"}`; FigCraft
+  `run_command {"command": "file.new", "params": {}}`; VectorCraft
+  `run_command {"command": "file.new"}`.
 
 ## Limits to live with
 

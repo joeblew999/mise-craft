@@ -35,7 +35,7 @@ mise config (mise ignores it in a project file).
 | Task | Does | Undone by |
 |---|---|---|
 | `task:log <task> [args...]` | Runs any task and keeps its full output and exit code in `logs/`, one file per run (not committed) | (delete the file) |
-| `apps:status` | Shows each app's pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
+| `apps:status` | Shows each app's pinned version, whether that version is checked end to end, its control port, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
 | `<app>:install` | Installs the app's CLI and desktop app, then `claude-code:sync` | `<app>:uninstall` |
 | `<app>:uninstall` | Unwatches the app, removes every installed version of both, unregisters the app from macOS, then `claude-code:sync` | `<app>:install` |
 | `<app>:watch` | Adds the app's live MCP server to Claude Code, for this project | `<app>:unwatch` |
@@ -63,15 +63,16 @@ Everything the stages produce lands at the repo root. They run in this order, as
 [design/mise.toml](design/mise.toml) lists them:
 
 ```sh
-mise -C design run upstream:fetch           # 1. GitHub → every app's upstream block in apps.json
-mise -C design run app:check cadcraft  # 2. an installed app → its observed block in apps.json
-                                   # 3. record: the maintainer edits family.json and apps.json
-mise -C design run config:build             # 4-6. validate, generate mise.toml and servers.json, lock
+mise -C design run upstream:fetch       # 1. prints each app's pinned and latest version, from GitHub
+mise -C design run app:check cadcraft   # 2. prints what an installed app shows, and fails if it didn't work
+                                        # 3. record: the maintainer edits family.json, apps.json
+                                        #    and docs/problems.md
+mise -C design run config:build         # 4-6. validate, generate mise.toml and servers.json, lock
 ```
 
-Stages 1 and 2 bring in facts from outside, so they run only when asked, and what they wrote is
-reviewed before stage 3. Stage 2 is the only one that runs anything on the machine: it needs the app
-installed, and opens it to list its live tools. Stages 4 to 6 are tasks of their own, and each
+Stages 1 and 2 bring in facts from outside, so they run only when asked, and they write nothing:
+what they print is the log, and the maintainer decides what to record. Stage 2 is the only one that
+runs anything on the machine: it needs the app installed, and opens it to list its live tools. Stages 4 to 6 are tasks of their own, and each
 depends on the one before it, so running any of them runs the earlier ones first: nothing can be
 locked before it is generated. Runtime tasks read what the stages produced and never change it:
 installs run with `--locked`, so they never write `mise.lock`.
@@ -81,20 +82,21 @@ installs run with `--locked`, so they never write `mise.lock`.
 What this repo knows about the Craft apps is in two files:
 
 - **[design/family.json](design/family.json): what every Craft app shares,** defined once with
-  `{id}`, `{name}` and `{port}` placeholders: the repo and download naming, the CLI's name, the
-  bundle and process name, how the headless server starts and the usual way the live server
-  connects.
-- **[design/apps.json](design/apps.json): each app, and only what is its own.** Written by hand:
-  its id, name, the exact version pinned, its control port once checked, `overrides` (only where it
-  differs from the family, so every uncommon thing about an app is listed there), `problems`
-  (numbers into [docs/problems.md](docs/problems.md)) and `notes`. Written by `upstream:fetch`: `upstream`,
-  its description, latest release, published platforms, MCP docs and the port its own docs use.
-  Written by `app:check`: `observed`, the evidence of checking it end to end, such as its usage line,
-  bundle, tools only its live server has, and whether file access can be confined (what a fresh app
-  holds is recorded by hand). The file's
-  `"//"` lines explain each field.
+  `{id}`, `{name}` and `{port}` placeholders: the repo and where it documents MCP, the download
+  names, the CLI's name, the bundle and process name, the option the desktop app takes its control
+  port with (`--control`), the CLI subcommand that starts the MCP server (`mcp`), and the usual
+  options of the headless and live servers. No script holds any of these itself: each reads them
+  from here, so an app that differs needs only an override.
+- **[design/apps.json](design/apps.json): each app's definition, and nothing else.** Written by
+  hand: `id`, `name`, `version` (the exact version installed), `checked` (the version that was
+  checked end to end; without it the app is unchecked and gets no MCP servers), `port` (its control
+  port, once checked) and `overrides` (only where it differs from the family, in the same shape, so
+  every way an app differs is listed there). An app without `overrides` is either checked and the
+  same as the family, or unchecked; `checked` says which.
 
-An app's full description is the family with its `overrides` laid over it. Each app's CLI,
+An app's full description is the family with its `overrides` laid over it
+([design/app-merge.jq](design/app-merge.jq)). How particular apps behave, such as which tool a
+fresh app needs first, is in [docs/problems.md](docs/problems.md). Each app's CLI,
 `<app>-cli`, runs a headless MCP server with `<app>-cli mcp`. The
 [ArtCraft Launcher](https://github.com/storytold/craft-launcher) isn't used here: it installs the
 desktop apps into `/Applications` from a GUI.
@@ -130,8 +132,9 @@ Files the apps write themselves, such as documents, preferences and control toke
   unpacking. A `postinstall` step, [scripts/dmg-unpack.sh](scripts/dmg-unpack.sh), copies the `.app`
   out of the image and registers it with macOS so `open -a <App>` finds it. The apps stay in mise's
   install folders, not `/Applications`, and are signed and notarized by their publisher.
-- **Control ports.** Each desktop app takes `--control PORT`. Several apps' own docs use 7979
-  (`upstream.docs_port`), so `design/apps.json` gives each checked app its own `port`. The port is
+- **Control ports.** Each desktop app takes `--control PORT` (family.json's `control`). Several
+  apps' own docs use 7979 (`upstream:fetch` shows each), so `design/apps.json` gives each checked
+  app its own `port`. The port is
   written down, not worked out from the app's place in the list, so a newly published app never
   moves another app's port.
 - **Opening the app for a live server.** An app whose server can open it (`opens_itself` in its
@@ -158,14 +161,14 @@ What runs or reads what. Each file's header states its own lineage in full.
 ```
 design/                          design time: the registry and its six stages (mise -C design run <task>)
   mise.toml                      the stages: what each reads and writes, in order; runs
-                                 registry:validate (stage 4) and lock:update (stage 6) itself
+                                 lock:update (stage 6) itself
   family.json                    what every Craft app shares, written by hand (stage 3)
-  apps.json                      each app: by hand (stage 3), except upstream (stage 1) and observed
-                                 (stage 2); read by every stage and by apps:status
-  app-merge.jq                   the family + app merge, shared by app-check, config-generate and
-                                 registry:validate
-  upstream-fetch                 stage 1, upstream:fetch: GitHub (through gh) → every app's upstream block
-  app-check                      stage 2, app:check: an installed app → its observed block
+  apps.json                      each app's definition, written by hand (stage 3); read by every stage
+                                 and by apps:status
+  app-merge.jq                   the family + app merge, shared by every stage
+  upstream-fetch                 stage 1, upstream:fetch: GitHub (through gh) → printed table
+  app-check                      stage 2, app:check: an installed app → printed report
+  registry-validate              stage 4, registry:validate: stops the build if the registry is wrong
   config-generate                stage 5, config:generate: registry → ../mise.toml, ../servers.json
 mise-tasks/                      runtime, run by you: mise run <task>
   apps/status                    apps:status: reads design/apps.json, mise, .mcp.json, ~/.claude.json,
@@ -185,7 +188,7 @@ servers.json                     generated by design/config-generate: read by cl
                                  VS Code, claude-desktop:install and apps:status
 logs/                            runtime, not committed: one file per `mise run task:log <task>`
 .gitignore                       keeps .mcp.json and logs/ out of git
-docs/problems.md                 every problem found, and what it needs
+docs/problems.md                 every problem found and how particular apps behave, by number
 CLAUDE.md                        read by Claude Code; imports this README
 ```
 
@@ -195,14 +198,13 @@ CLAUDE.md                        read by Claude Code; imports this README
   starts them, and its tasks restore the file exactly) but not yet in Claude Desktop itself, and it
   gets only the headless servers.
 - **The headless MCP servers can read and write any file you can.** This repo passes no
-  `--automation-read-root` / `--automation-write-root`; an app's `observed.file_roots` says whether
-  its CLI could confine it. A live server is confined only by the app it drives. (Problem 13.)
-- **Each app's own problems** are listed by number in its `problems` in
-  [design/apps.json](design/apps.json), and described in [docs/problems.md](docs/problems.md).
+  `--automation-read-root` / `--automation-write-root`; `app:check` prints whether an app's CLI
+  could confine it. A live server is confined only by the app it drives. (Problem 13.)
+- **Each app's own problems** are in [docs/problems.md](docs/problems.md), which names the app.
 - **`mise install --locked`** with no tool names also checks your global mise tools, which aren't
   in this lockfile, so name the tools: `mise install --locked cadcraft cadcraft-cli`.
 - **Platforms.** This repo installs the macOS builds only. Which platforms each app's CLI and
-  desktop app are published for is in its `upstream` block in `design/apps.json`.
+  desktop app are published for is printed by `mise -C design run upstream:fetch`.
 
 ## Plan
 
@@ -250,21 +252,18 @@ These rules are for people and agents alike; Claude Code reads this README throu
   server's command, where stdin and stdout carry MCP messages that `mise run` disturbs: run as a
   task with `depends`, a live server lost the client's first messages. Neither is run by hand.
 - **Record every unusual thing the moment you find it.** About one app: in its `overrides` if it
-  differs from the family, otherwise in `notes` (`app:check` writes what it can measure into
-  `observed`). A problem
-  goes in [docs/problems.md](docs/problems.md), and the app lists its number in `problems`. About
-  everything: in this README. Never leave it in a test log or a commit message only.
+  differs from the family, otherwise in [docs/problems.md](docs/problems.md), naming the app. A
+  problem goes in docs/problems.md too. About everything: in this README. Never leave it in a test log or a commit message only.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml` and
-  `servers.json` (`design/config-generate`), `mise.lock` (`mise lock`), `.mcp.json` (`claude-code:sync`, at
-  runtime), and in `design/apps.json` the `upstream` blocks (`design/upstream-fetch`) and most of `observed`
-  (`design/app-check`); everything else is written by hand. JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the
-  header mise writes.
+  `servers.json` (`design/config-generate`), `mise.lock` (`mise lock`) and `.mcp.json`
+  (`claude-code:sync`, at runtime); everything else is written by hand. JSON files, which can't
+  hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
 - **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out,
-  never guessed: an app's `port` and `observed` once it's checked end to end.
+  never guessed: an app's `checked`, `port` and `overrides` once it's checked end to end.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, `mise -C design run app:check <app>`, and a tool call that shows
-  up in the app; then record its `port`, `overrides`, `problems` and what a fresh app holds in
-  `design/apps.json`, and run `mise -C design run config:build`.
+  up in the app; then record its `checked`, `port` and `overrides` in `design/apps.json`, how it
+  behaves in docs/problems.md, and run `mise -C design run config:build`.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
   that would download gigabytes.

@@ -2,9 +2,18 @@
   "//": [
     "Lineage: written by hand. What every Craft app shares, defined once as the default for every app in design/apps.json.",
     "An app's overrides lay over this (objects merge; arrays and values replace), then {id}, {name}, {version} and {port} are filled in from the app.",
-    "Read by: the validate stage in design/mise.toml (stage 4), design/config-generate (stage 5) and design/app-check (stage 2)."
+    "repo: the app's GitHub repo. docs: where in that repo the app documents its MCP server and its control protocol.",
+    "install: the release assets mise downloads (cli, the CLI zip; app, the desktop app's DMG) and the command the CLI installs (cli_bin).",
+    "bundle: the desktop app's .app folder and the executable inside it, which is also its process name.",
+    "control: the option the desktop app takes its control port with, the port the live server connects to.",
+    "mcp: the CLI subcommand that starts its MCP server, the options for the headless server and for the live server, and whether the live server opens the app itself (if not, scripts/app-open.sh opens it first).",
+    "Read by: design/upstream-fetch (stage 1), design/app-check (stage 2), design/registry-validate (stage 4) and design/config-generate (stage 5)."
   ],
   "repo": "storytold/{id}",
+  "docs": {
+    "mcp": "docs/mcp.md",
+    "control": "docs/control-protocol.md"
+  },
   "install": {
     "cli": "{id}-cli-*-macos-universal.zip",
     "cli_bin": "{id}-cli",
@@ -14,10 +23,11 @@
     "name": "{name}.app",
     "executable": "{name}"
   },
+  "control": "--control",
   "mcp": {
+    "subcommand": "mcp",
     "headless": [],
     "live": ["--connect", "127.0.0.1:{port}"],
     "opens_itself": false
-  },
-  "first_step": null
+  }
 }

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Design-time stage 5: generate the root's mise.toml and servers.json from family.json and apps.json.
-# Validation (stage 4) runs before it and locking (stage 6) after it, both from design/mise.toml.
+# registry:validate (stage 4) runs before it and lock:update (stage 6) after it, both from design/mise.toml.
 #
 # Lineage:
-#   run by   the generate task in design/mise.toml (`mise run config:build` in design/ runs it, after validate)
+#   run by   config:generate in design/mise.toml (`mise run config:build` in design/ runs it, after
+#            registry:validate)
 #   reads    design/family.json, design/apps.json, design/app-merge.jq (the merge)
 #   writes   mise.toml and servers.json at the repo root, where runtime reads them. Nothing it
 #            produces stays in design/.
@@ -11,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # Every app in full, from app-merge.jq: family.json with the app's overrides laid over it, placeholders
-# filled in. An app with observed is checked.
+# filled in. An app is checked when apps.json gives it the version that was checked.
 full=$(jq -c --slurpfile fam family.json -L . 'include "app-merge"; [.apps[] | full($fam[0])]' apps.json)
 
 # One "id version name repo cli-asset app-asset" line per app, and the ids of the checked apps.
@@ -112,12 +113,12 @@ servers_json() {
       "Read by: mise-tasks/claude-code/sync (writes .mcp.json for the apps installed here), mise-tasks/apps/watch (adds one live server to Claude Code)."
     ],
     headless: ([.[] | select(.checked) | {key: .id,
-      value: {command: "mise", args: (["exec", "--", .install.cli_bin, "mcp"] + .mcp.headless)}}] | from_entries),
+      value: {command: "mise", args: (["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.headless)}}] | from_entries),
     live: ([.[] | select(.checked) | {key: "\(.id)-app",
       value: {command: "mise", args: (
-        if .mcp.opens_itself then ["exec", "--", .install.cli_bin, "mcp"] + .mcp.live
-        else ["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")), (.port | tostring),
-          .install.cli_bin, "mcp"] + .mcp.live
+        if .mcp.opens_itself then ["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.live
+        else ["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")), .control, (.port | tostring),
+          .install.cli_bin, .mcp.subcommand] + .mcp.live
         end)}}] | from_entries)
   }' <<<"$full"
 }

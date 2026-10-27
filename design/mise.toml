@@ -2,51 +2,41 @@
 # apps.json) and the six stages that turn it into the files runtime reads. Everything the stages
 # produce lands at the repo root; the registry stays here.
 #
-#   stage         task (file)                         reads                     writes
-#   1 fetch       upstream:fetch (upstream-fetch)     GitHub                    apps.json: every app's upstream block
-#   2 check       app:check <app> (app-check)         the installed app         apps.json: that app's observed block
-#   3 record      (by hand)                           what 1 and 2 found        family.json: what every app shares;
-#                                                                               apps.json: each app's version, port,
-#                                                                               overrides, problems and notes
-#   4 validate    registry:validate (inline)          family.json, apps.json    nothing: stops here if anything is wrong
-#   5 generate    config:generate (config-generate)   family.json, apps.json    ../mise.toml, ../servers.json
-#   6 lock        lock:update (inline)                ../mise.toml              ../mise.lock
+#   stage        task (file)                             reads                   writes
+#   1 fetch      upstream:fetch (upstream-fetch)         GitHub                  nothing: prints each app's pinned
+#                                                                                and latest version, docs port and
+#                                                                                platforms
+#   2 check      app:check <app> (app-check)             the installed app       nothing: prints what the app
+#                                                                                showed, fails if something
+#                                                                                didn't work
+#   3 record     (by hand)                               what 1 and 2 printed    family.json: what every app shares;
+#                                                                                apps.json: each app's version,
+#                                                                                checked, port and overrides;
+#                                                                                ../docs/problems.md: how apps behave
+#   4 validate   registry:validate (registry-validate)   family.json, apps.json  nothing: stops here if anything
+#                                                                                is wrong
+#   5 generate   config:generate (config-generate)       family.json, apps.json  ../mise.toml, ../servers.json
+#   6 lock       lock:update (inline)                    ../mise.toml            ../mise.lock
 #
 # Stages 1 and 2 bring in facts from outside (GitHub, a running app), so they only run when asked,
-# and what they wrote is reviewed before stage 3. Stage 2 is the only stage that runs something on
+# and only print: what they print is the log, and the maintainer decides what to record in stage 3.
+# Run them with `| tee` to keep it. Stage 2 is the only stage that runs something on
 # the machine: it needs the app installed, and opens it to list its live tools. Stage 3 is done by
 # whoever maintains this repo. Stages 4 to 6 each depend on the one before, so config:build (or any
-# one of them) always runs them in order. registry:validate, config:generate and app:check all merge
-# family and app with app-merge.jq.
+# one of them) always runs them in order. Stages 1, 2 and 5 merge family and app with app-merge.jq.
 
 [tasks."upstream:fetch"]
-description = "Stage 1: refresh every app's upstream block in apps.json from GitHub."
+description = "Stage 1: print each app's pinned and latest version, the port its own docs use, and the platforms it is published for, from GitHub. Writes nothing."
 run = "./upstream-fetch"
 
 [tasks."app:check"]
-description = "Stage 2: measure one installed app (usage line, bundle, headless and live tools, file confinement) into its observed block in apps.json."
+description = "Stage 2: run one installed app and print what it showed: usage line, bundle, headless and live tools, file confinement. Writes nothing; fails if something didn't work."
 usage = 'arg "<app>" help="An installed app, such as cadcraft"'
 run = './app-check "$usage_app"'
 
 [tasks."registry:validate"]
-description = "Stage 4: stop before anything is written if family.json or apps.json is wrong: inexact versions, overrides of fields the family doesn't have, checked apps without a unique port or a usable bundle."
-run = '''
-jq -e -n -L . --slurpfile fam family.json --slurpfile apps apps.json 'include "app-merge";
-  ($fam[0] | del(."//")) as $f | $apps[0].apps as $a
-  | [ ($a[] | select(.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
-      | "\(.id): version \(.version) is not exact"),
-    ($a[] | . as $x | (.overrides // {}) | keys[] | select(. as $k | $f | has($k) | not)
-      | "\($x.id): overrides \(.), which family.json does not have"),
-    ($a[] | . as $x | (.overrides.mcp // {}) | keys[] | select(. as $k | $f.mcp | has($k) | not)
-      | "\($x.id): overrides mcp.\(.), which family.json does not have"),
-    ($a[] | select(.observed and (.port == null)) | "\(.id): checked but has no port"),
-    ([$a[] | select(.port) | .port] | group_by(.) | map(select(length > 1) | .[0])[]
-      | "port \(.) is used by more than one app"),
-    ($a[] | select(.observed) | . as $x | full($fam[0])
-      | select((.mcp.opens_itself | not) and .bundle.name != .bundle.executable + ".app")
-      | "\($x.id): scripts/app-open.sh opens and finds the app by one name, so its bundle must be the executable plus .app")
-  ] | if length == 0 then true else error(join("\n")) end' >/dev/null
-'''
+description = "Stage 4: stop before anything is generated if family.json or apps.json is wrong: an inexact version, a checked app without a port, two apps on one port, or an override of a field family.json doesn't have."
+run = "./registry-validate"
 
 [tasks."config:generate"]
 description = "Stage 5: family.json + apps.json -> the root's mise.toml and servers.json."

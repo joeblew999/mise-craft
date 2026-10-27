@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-#MISE description="Show each Craft app: pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code and Claude Desktop."
+#MISE description="Show each Craft app: its pinned version, whether that version is checked end to end, its control port, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code and Claude Desktop."
 # Lineage:
 #   run by   `mise run apps:status`
 #   reads    design/apps.json, `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config
 #            (changes nothing)
 set -euo pipefail
-root=$(cd "$(dirname "$0")/.." && pwd)
+root=$(cd "$(dirname "$0")/../.." && pwd)
 desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 tools=$(mise ls --json 2>/dev/null)
 # Claude Code: the project's .mcp.json plus the live servers <app>:watch added for this project.
@@ -17,19 +17,18 @@ desktop_servers=$([ -f "$desktop" ] && jq -r --arg root "$root" \
 installed() { [ "$(jq -r --arg t "$1" '.[$t][0].installed // false' <<<"$tools")" = true ] && echo yes || echo -; }
 servers() { grep -E "^$1(-app)?$" <<<"$2" | tr '\n' ' ' || true; }
 
-row='%-12s %-8s %-8s %-9s %-5s %-4s %-4s %-8s %-28s %s\n'
-printf "$row" APP VERSION LATEST CHECKED PORT CLI APP RUNNING "CLAUDE CODE" "CLAUDE DESKTOP"
+row='%-12s %-8s %-9s %-5s %-4s %-4s %-8s %-28s %s\n'
+printf "$row" APP VERSION CHECKED PORT CLI APP RUNNING "CLAUDE CODE" "CLAUDE DESKTOP"
 apps=$(jq -r --arg config "$root/mise.toml" \
   'to_entries[] | select(.value[0].source.path == $config) | .key | select(endswith("-cli")) | rtrimstr("-cli")' <<<"$tools")
 for app in $apps; do
   version=$(jq -r --arg t "$app" '.[$t][0].requested_version' <<<"$tools")
   entry=$(jq -c --arg id "$app" '.apps[] | select(.id == $id)' "$root/design/apps.json")
-  latest=$(jq -r '.upstream.latest // "?"' <<<"$entry")
-  checked=$(jq -r 'if .observed == null then "-" elif .observed.version == .version then "yes" else "re-check" end' <<<"$entry")
+  checked=$(jq -r 'if .checked == null then "-" elif .checked == .version then "yes" else "re-check" end' <<<"$entry")
   port=$(jq -r '.port // "-"' <<<"$entry")
   bundle=$(ls -d "$(jq -r --arg t "$app" '.[$t][0].install_path' <<<"$tools")"/*.app 2>/dev/null | head -1 || true)
   running=-
   [ -n "$bundle" ] && pgrep -f "$bundle/Contents/MacOS/" >/dev/null && running=yes
-  printf "$row" "$app" "$version" "$latest" "$checked" "$port" "$(installed "$app-cli")" "$(installed "$app")" \
+  printf "$row" "$app" "$version" "$checked" "$port" "$(installed "$app-cli")" "$(installed "$app")" \
     "$running" "$(servers "$app" "$code_servers")" "$(servers "$app" "$desktop_servers")"
 done
