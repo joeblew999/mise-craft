@@ -2,7 +2,7 @@
 #MISE description="Show each Craft app: pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code and Claude Desktop."
 # Lineage:
 #   run by   `mise run status`
-#   reads    apps.json, `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config
+#   reads    design/apps.json, `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config
 #            (changes nothing)
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
@@ -23,7 +23,7 @@ apps=$(jq -r --arg config "$root/mise.toml" \
   'to_entries[] | select(.value[0].source.path == $config) | .key | select(endswith("-cli")) | rtrimstr("-cli")' <<<"$tools")
 for app in $apps; do
   version=$(jq -r --arg t "$app" '.[$t][0].requested_version' <<<"$tools")
-  entry=$(jq -c --arg id "$app" '.apps[] | select(.id == $id)' "$root/apps.json")
+  entry=$(jq -c --arg id "$app" '.apps[] | select(.id == $id)' "$root/design/apps.json")
   latest=$(jq -r '.upstream.latest // "?"' <<<"$entry")
   checked=$(jq -r 'if .checked == null then "-" elif .checked.version == .version then "yes" else "re-check" end' <<<"$entry")
   port=$(jq -r '.mcp.port // "-"' <<<"$entry")

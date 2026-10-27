@@ -31,6 +31,7 @@ bug), **app behaviour** (recorded, nothing to fix here), **limit**, or **yours**
 | 22 | GitHub API rate limits; mise ignores `github.credential_command` in a project file | limit | Global `credential_command` or `GITHUB_TOKEN` (README) |
 | 23 | A safety check blocked deleting my test clone | yours | Delete `/private/tmp/claude-501/…/scratchpad/friend` |
 | 24 | DeckCraft's `--help` lists `mcp` without its options | app behaviour | Recorded; `deckcraft-cli mcp --help` shows them |
+| 25 | A runtime install (`<app>:install`) has mise rewrite `mise.lock`, a design-time file: "mise lock ✓ … targets checked" appears in install logs | **open** | Runtime should install against the lock without updating it (mise's locked mode, to verify first); see `docs/design-time-vs-runtime.md` |
 
 App behaviours that aren't problems (what a fresh app holds, tools only the live server has, …) are
 structured fields in `apps.json`, not entries here.

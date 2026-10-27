@@ -1,45 +1,39 @@
-<!-- Lineage: written by hand. The proposal for separating design time from runtime; nothing here is built yet. -->
+<!-- Lineage: written by hand. The design time / runtime split: what is built, and what is still open. -->
 
 # Design time vs runtime
-
-**Status:** proposed, not built. Agree it with the owner before changing anything.
 
 ## The two
 
 - **Design time** is what the repo says should exist, identical on every machine, changed only by
-  editing and committing: `apps.json` (including its fetched `upstream` facts), the tasks and
-  scripts, and everything generated from `apps.json`. Generation depends on `apps.json` alone, never
-  on the state of the machine.
+  editing and committing. It lives in `design/`: what you edit (`design/apps.json`) and the pipeline
+  that turns it into files (`design/fetch`, `design/gen`, defined in `design/mise.toml`). It never
+  reads the state of the machine.
 - **Runtime** is what exists on one machine now, changed only by running tasks (each with an undo),
   never committed: installed CLIs and apps, their registration with macOS, servers registered in
-  Claude Code and Claude Desktop, running apps, token files, documents. `status` is the read-only
-  view of runtime against design time.
-- **The boundary:** design-time files never read runtime state; runtime tasks read design-time files
-  but never edit them.
+  Claude Code and Claude Desktop, running apps, token files, documents.
+- **The boundary:** everything the pipeline produces lands at the repo root (`mise.toml`,
+  `mise.lock`, `.mcp.json`, `mcp-live.json`), where runtime reads it. Runtime never edits what
+  design time produced.
 
-## Where they are mixed today
+## The pipeline (built)
 
-1. `.mcp.json` is committed (design time), but Claude Code treats it as "start these servers here"
-   (runtime). That is problem 12.
-2. A change, reverted before commit, had `gen` read what's installed and the install tasks call
-   `gen`: mixing in both directions.
-3. `checked` in `apps.json` records a runtime observation ("worked on this machine on this date")
-   in design-time data. Probably fine as a record of evidence; owner to decide.
+Its stages run in this order, each reading only what the stages before it wrote:
 
-## Proposal
+1. **fetch** (`mise -C design run fetch`): GitHub → the `upstream` blocks in `design/apps.json`.
+2. **edit**: you → the hand-written facts in `design/apps.json`.
+3. **validate**, 4. **generate**, 5. **lock** (`mise -C design run gen`, always together, in order):
+   check `design/apps.json`, write the root's `mise.toml`, `.mcp.json` and `mcp-live.json`, then
+   run `mise lock`.
 
-- **Design time** (committed; generated from `apps.json` only): `apps.json`, `mise.toml`, `mise.lock`,
-  and one definitions file for every checked app's headless and live servers, which Claude Code
-  never reads directly (it replaces `mcp-live.json`). Design-time tasks get their own prefix, such
-  as `registry:gen` and `registry:fetch`.
-- **Runtime** (per machine, each with an undo): `<app>:install` / `:uninstall` install the app and
-  register its headless server here; `<app>:watch` / `:unwatch` register its live server;
-  `desktop:install` / `:uninstall` the same for Claude Desktop. `.mcp.json` becomes a runtime file,
-  written only by runtime tasks and not committed, listing servers for the apps installed here, so
-  VS Code still sees them.
+## Still open
 
-## Open questions for the owner
-
-1. Does this split match yours, in particular `.mcp.json` becoming an uncommitted runtime file and the
-   `registry:` prefix for design-time tasks?
-2. Is `checked` acceptable as design-time data?
+1. **`.mcp.json` is design-time output that Claude Code treats as runtime registration** ("start these
+   servers here"), so a checked app that isn't installed shows as a failed server (problem 12).
+   Proposal: make `.mcp.json` a runtime file, written by the install tasks and not committed. Not
+   built; agree it with the owner first.
+2. **A runtime install rewrites `mise.lock`**, a design-time file (problem 25).
+3. **`status` reads `design/apps.json` directly** (for each app's latest version, checked state and
+   port), where every other runtime task reads only what the pipeline put at the root. Allowed by
+   the boundary as written; the alternative is for `gen` to write a small summary at the root.
+4. **`checked` in `design/apps.json`** records a runtime observation ("worked on this machine on this
+   date") in design-time data. Probably fine as evidence; owner to decide.

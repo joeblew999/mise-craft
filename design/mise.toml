@@ -1,0 +1,23 @@
+# Lineage: written by hand. The design-time pipeline: everything in design/ runs before runtime and
+# never reads the state of the machine. Its stages run in this order, each reading only what the
+# stages before it wrote:
+#
+#   1. fetch      GitHub -> the upstream blocks in apps.json                  (./fetch)
+#   2. edit       you -> the hand-written facts in apps.json
+#   3. validate   apps.json -> ok, or stop before anything is written         (./gen)
+#   4. generate   apps.json -> ../mise.toml, ../.mcp.json, ../mcp-live.json  (./gen)
+#   5. lock       ../mise.toml -> ../mise.lock                                (./gen)
+#
+# design/ holds only what you edit (apps.json) and the steps. Everything the pipeline produces lands
+# at the repo root, where runtime reads it.
+#
+# Stages 3-5 only ever run together, in order, as `gen`, so nothing can be locked before it is
+# generated.
+
+[tasks.fetch]
+description = "Stage 1: refresh each app's upstream block in apps.json from GitHub. Review what changed, then run gen."
+run = "./fetch"
+
+[tasks.gen]
+description = "Stages 3-5, in order: validate apps.json, generate the root's mise.toml, .mcp.json and mcp-live.json from it, then lock."
+run = "./gen"

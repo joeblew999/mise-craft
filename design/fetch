@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-#MISE description="Refresh each app's upstream block in apps.json from GitHub: description, latest release, published platforms, MCP docs and the port its docs use. Changes nothing else."
+# Design-time stage 1: refresh each app's upstream block in apps.json from GitHub (description,
+# latest release, published platforms, MCP docs, the port its docs use). Changes nothing else.
+#
 # Lineage:
-#   run by   `mise run apps:fetch`
-#   reads    apps.json; GitHub through gh (each repo's latest release, README and docs)
-#   writes   the upstream block of each app in apps.json, and nothing else
+#   run by   `mise run fetch` in design/ (design/mise.toml)
+#   reads    design/apps.json; GitHub through gh (each repo's latest release, README and docs)
+#   writes   the upstream block of each app in design/apps.json, and nothing else
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")"
 
 # The OS and architecture in a release asset's name, such as macos-universal or linux-x86_64.
 platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
