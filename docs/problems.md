@@ -3,7 +3,7 @@
 # Problems
 
 Every problem found so far, and how particular apps behave, sorted by what it needs. The numbers
-never change. Only the first two sections need anything done.
+never change. Only the first section needs anything done.
 
 ## Open: needs doing
 
@@ -16,15 +16,14 @@ never change. Only the first two sections need anything done.
 - **5. CADCraft's first live call can fail** with "missing or invalid control token", right after
   `--launch` opens the app: its bridge reads the old token before the app writes a new one. Asking
   again works, and the error says so. It's CADCraft's bug (upstream #2087).
-  *Next: report it to storytold, only with the owner's OK.*
-
-## Yours to do, outside this repo
-
-- **21. Every mise command prints a warning** about `experimental_monorepo_root`, from a
-  `mise.toml` another Claude session left behind. *Delete
-  `/private/tmp/claude-501/…mise-cloudflare/…/scratchpad/mono/mise.toml`.*
-- **23. A test folder is left over**, because a safety check stopped me deleting it. *Delete
-  `/private/tmp/claude-501/…/scratchpad/friend`.*
+  *Next: open CADCraft through `scripts/app-open.sh` like the other apps, which waits for the
+  app's port before the server starts, and see whether the first call then works.*
+- **29. Five apps have never been checked**: LightCraft, PdfCraft, PhotoCraft, SoundCraft and
+  WordCraft. They can be installed, but get no MCP servers. *Next: install, check and record each,
+  one at a time.*
+- **30. Inside `design/`, mise also loads the repo's root `mise.toml`**, so runtime tasks run from
+  there too (`mise -C design run cadcraft:install` works). Design time and runtime aren't fully
+  apart. *Next: find a way to keep `design/` from inheriting the root config.*
 
 ## Not bugs: how particular apps behave
 
@@ -45,6 +44,11 @@ never change. Only the first two sections need anything done.
   DeckCraft `new_presentation`; EffectCraft `command_run {"id": "comp.new"}`; FigCraft
   `run_command {"command": "file.new", "params": {}}`; VectorCraft
   `run_command {"command": "file.new"}`.
+- **28. FilmCraft opens its control port only to a token it shares with its live server**, through
+  `FILMCRAFT_CONTROL_TOKEN`, made fresh for each session; the other apps keep their own token. Its
+  `control_token_env` override makes `scripts/app-open.sh` create one and give it to both. So a
+  FilmCraft opened some other way can't be driven: quit it first. `open --env` puts the token on
+  `open`'s command line for a moment, which FilmCraft's docs advise against.
 
 ## Limits to live with
 
@@ -84,3 +88,11 @@ Kept so they don't happen again.
 - **19. zsh broke two of my generator scripts** (word splitting, globbing). They run under bash.
 - **25. Installing an app could rewrite `mise.lock`.** Installs run with `--locked`, so they never
   write it.
+- **31. `app:check` stopped without a word when a server didn't answer**, and left the app open.
+  It now says which server failed, and closes the app on the way out either way.
+- **32. `apps:status` listed no apps** after its task moved a folder down; the test only checked
+  that it ran. The test now counts the apps.
+- **33. Scripts hard-coded what every app shares** (`mcp`, `--control`, `docs/mcp.md`) instead of
+  reading `design/family.json`, so an app couldn't override them.
+- **34. `watch`, `unwatch` and `status` ignored `CLAUDE_CONFIG_DIR`**, so the test wrote into your
+  own Claude Code config. They honour it now, and `repo:test` uses a config of its own.

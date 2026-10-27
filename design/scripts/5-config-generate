@@ -118,7 +118,7 @@ servers_json() {
       value: {command: "mise", args: (
         if .mcp.opens_itself then ["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.live
         else ["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")), .control, (.port | tostring),
-          .install.cli_bin, .mcp.subcommand] + .mcp.live
+          (.control_token_env // "-"), .install.cli_bin, .mcp.subcommand] + .mcp.live
         end)}}] | from_entries)
   }' <<<"$full"
 }

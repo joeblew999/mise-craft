@@ -161,6 +161,14 @@ run = "mise run apps:install figcraft"
 description = "Uninstall FigCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall figcraft"
 
+[tasks."filmcraft:watch"]
+description = "Let Claude drive the FilmCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with filmcraft:unwatch."
+run = "mise run apps:watch filmcraft"
+
+[tasks."filmcraft:unwatch"]
+description = "Remove FilmCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch filmcraft"
+
 [tasks."filmcraft:install"]
 description = "Install FilmCraft 0.13.0: its CLI (filmcraft-cli, with the MCP server) and desktop app. Undo with filmcraft:uninstall."
 run = "mise run apps:install filmcraft"

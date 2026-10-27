@@ -6,6 +6,7 @@
     "install: the release assets mise downloads (cli, the CLI zip; app, the desktop app's DMG) and the command the CLI installs (cli_bin).",
     "bundle: the desktop app's .app folder and the executable inside it, which is also its process name.",
     "control: the option the desktop app takes its control port with, the port the live server connects to.",
+    "control_token_env: for an app that opens its control port only to a token it shares with its live server, the environment variable that carries it (scripts/app-open.sh makes a fresh one each time it opens the app); null for apps that keep their own token.",
     "mcp: the CLI subcommand that starts its MCP server, the options for the headless server and for the live server, and whether the live server opens the app itself (if not, scripts/app-open.sh opens it first).",
     "Read by: design/scripts/1-upstream-fetch (stage 1), design/scripts/2-app-check (stage 2), design/scripts/4-registry-validate (stage 4) and design/scripts/5-config-generate (stage 5)."
   ],
@@ -24,6 +25,7 @@
     "executable": "{name}"
   },
   "control": "--control",
+  "control_token_env": null,
   "mcp": {
     "subcommand": "mcp",
     "headless": [],

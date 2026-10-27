@@ -79,6 +79,7 @@
       "id": "filmcraft",
       "name": "FilmCraft",
       "version": "0.13.0",
+      "checked": "0.13.0",
       "port": 7984,
       "overrides": {
         "mcp": {
@@ -86,7 +87,8 @@
             "--bridge",
             "127.0.0.1:{port}"
           ]
-        }
+        },
+        "control_token_env": "FILMCRAFT_CONTROL_TOKEN"
       }
     },
     {

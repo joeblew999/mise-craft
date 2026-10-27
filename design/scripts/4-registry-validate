@@ -30,7 +30,7 @@ trap 'rm -f "$problems"' EXIT
   # An override may only change a field family.json has, so a misspelled one can't be ignored silently.
   jq -r --slurpfile fam family.json '.apps[] | .id as $id | (.overrides // {})
     | paths(type != "object") | select(all(.[]; type == "string"))
-    | select(. as $p | $fam[0] | getpath($p) == null)
+    | select(. as $p | [$fam[0] | paths] | index([$p]) == null)
     | "\($id): overrides \(join(".")), which family.json does not have"' apps.json
 } >"$problems"
 if [ -s "$problems" ]; then

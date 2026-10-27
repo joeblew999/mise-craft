@@ -50,6 +50,15 @@
         "mcp"
       ]
     },
+    "filmcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "filmcraft-cli",
+        "mcp"
+      ]
+    },
     "gridcraft": {
       "command": "mise",
       "args": [
@@ -94,6 +103,7 @@
         "DeckCraft",
         "--control",
         "7980",
+        "-",
         "deckcraft-cli",
         "mcp",
         "--connect",
@@ -110,6 +120,7 @@
         "DesignCraft",
         "--control",
         "7981",
+        "-",
         "designcraft-cli",
         "mcp",
         "--connect",
@@ -126,6 +137,7 @@
         "EffectCraft",
         "--control",
         "7982",
+        "-",
         "effectcraft-cli",
         "mcp",
         "--bridge",
@@ -142,10 +154,28 @@
         "FigCraft",
         "--control",
         "7983",
+        "-",
         "figcraft-cli",
         "mcp",
         "--attach",
         "7983"
+      ]
+    },
+    "filmcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/app-open.sh",
+        "FilmCraft",
+        "--control",
+        "7984",
+        "FILMCRAFT_CONTROL_TOKEN",
+        "filmcraft-cli",
+        "mcp",
+        "--bridge",
+        "127.0.0.1:7984"
       ]
     },
     "gridcraft-app": {
@@ -158,6 +188,7 @@
         "GridCraft",
         "--control",
         "7985",
+        "-",
         "gridcraft-cli",
         "mcp",
         "--connect",
@@ -174,6 +205,7 @@
         "VectorCraft",
         "--control",
         "7990",
+        "-",
         "vectorcraft-cli",
         "mcp",
         "--connect",

@@ -85,7 +85,8 @@ What this repo knows about the Craft apps is in two files:
 - **[design/family.json](design/family.json): what every Craft app shares,** defined once with
   `{id}`, `{name}` and `{port}` placeholders: the repo and where it documents MCP, the download
   names, the CLI's name, the bundle and process name, the option the desktop app takes its control
-  port with (`--control`), the CLI subcommand that starts the MCP server (`mcp`), and the usual
+  port with (`--control`), whether the app shares a token with its live server
+  (`control_token_env`), the CLI subcommand that starts the MCP server (`mcp`), and the usual
   options of the headless and live servers. No script holds any of these itself: each reads them
   from here, so an app that differs needs only an override.
 - **[design/apps.json](design/apps.json): each app's definition, and nothing else.** Written by
@@ -141,7 +142,8 @@ Files the apps write themselves, such as documents, preferences and control toke
 - **Opening the app for a live server.** An app whose server can open it (`opens_itself` in its
   `overrides`, CADCraft's `--launch`) opens at the first tool call. For the others,
   [scripts/app-open.sh](scripts/app-open.sh) opens the app with its control port and then
-  starts the server, so the app opens as soon as its live server starts.
+  starts the server, so the app opens as soon as its live server starts. For an app with a
+  `control_token_env` (FilmCraft), it also makes a fresh token and gives it to both.
 - **Watching.** Live servers stay out of `.mcp.json` because Claude Code starts every server it
   knows, at session start and on `claude mcp list`, and starting most live servers opens the app.
   Turning them off in settings doesn't work either: Claude Code merges `disabledMcpjsonServers`

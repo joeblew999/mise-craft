@@ -19,6 +19,7 @@ app=$(jq -c --arg id "$id" --slurpfile fam family.json -L scripts 'include "app-
 cli=$(jq -r '.install.cli_bin' <<<"$app")
 sub=$(jq -r '.mcp.subcommand' <<<"$app")
 control=$(jq -r '.control' <<<"$app")
+token_env=$(jq -r '.control_token_env // "-"' <<<"$app")
 port=$(jq -r '.port // empty' <<<"$app")
 mise which "$cli" >/dev/null 2>&1 || { echo "$id is not installed: run mise run $id:install at the repo root first" >&2; exit 1; }
 
@@ -58,19 +59,23 @@ tools() {
     | (cd .. && perl -e 'alarm 60; exec @ARGV' "$@" 2>/dev/null) \
     | jq -c 'select(.id == 2) | [.result.tools[].name] | sort'
 }
-headless=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.headless[]' <<<"$app"))
+# A server that doesn't answer leaves its list empty; the check after it says so.
+headless=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.headless[]' <<<"$app")) || true
 [ -n "$headless" ] || { echo "$id's headless server didn't answer" >&2; exit 1; }
 
 live='null'
 if [ -n "$port" ]; then
-  was_open=$(pgrep -x "$executable" >/dev/null && echo yes || echo no)
+  # Close the app again on the way out, pass or fail, if this check is what opened it.
+  if ! pgrep -x "$executable" >/dev/null; then
+    trap 'pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true' EXIT
+  fi
   if [ "$(jq -r '.mcp.opens_itself' <<<"$app")" = true ]; then
-    live=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app"))
+    live=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
   else
-    live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app"))
+    live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" "$token_env" \
+      "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
   fi
   [ -n "$live" ] || { echo "$id's live server didn't answer on port $port" >&2; exit 1; }
-  if [ "$was_open" = no ]; then pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true; fi
 else
   echo "$id has no port in apps.json yet, so its live server isn't checked" >&2
 fi
