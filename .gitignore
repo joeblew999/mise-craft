@@ -1,5 +1,5 @@
 # Lineage: written by hand. Files that differ per machine, so they are never committed.
-# .mcp.json: written at runtime by mise-tasks/claude/sync for the apps installed on this machine.
+# .mcp.json: written at runtime by mise-tasks/claude-code/sync for the apps installed on this machine.
 .mcp.json
-# logs/: what each `mise run log <task>` printed, one file per run on this machine.
+# logs/: what each `mise run task:log <task>` printed, one file per run on this machine.
 logs/

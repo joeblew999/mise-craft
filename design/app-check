@@ -5,15 +5,15 @@
 # wasn't open before). Review what it changed, then run gen.
 #
 # Lineage:
-#   run by   `mise run check <app>` in design/ (design/mise.toml)
-#   reads    design/family.json, design/apps.json, design/full.jq; the app's installed CLI and bundle
+#   run by   `mise run app:check <app>` in design/ (design/mise.toml)
+#   reads    design/family.json, design/apps.json, design/app-merge.jq; the app's installed CLI and bundle
 #   writes   these fields of the app's observed block in design/apps.json, and nothing else:
 #            version, on, usage, bundle, live_only_tools, look, file_roots. opens_with and
 #            control_token stay as recorded by hand.
 set -euo pipefail
 cd "$(dirname "$0")"
 id=${1:?usage: check <app>}
-app=$(jq -c --arg id "$id" --slurpfile fam family.json -L . 'include "full"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
+app=$(jq -c --arg id "$id" --slurpfile fam family.json -L . 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
 [ -n "$app" ] || { echo "$id is not in apps.json" >&2; exit 1; }
 cli=$(jq -r '.install.cli_bin' <<<"$app")
 port=$(jq -r '.port // empty' <<<"$app")
@@ -64,7 +64,7 @@ if [ -n "$port" ]; then
   if [ "$(jq -r '.mcp.opens_itself' <<<"$app")" = true ]; then
     live=$(tools mise exec -- "$cli" mcp $(jq -r '.mcp.live[]' <<<"$app"))
   else
-    live=$(tools mise exec -- sh scripts/mcp-open-app.sh "${bundle_name%.app}" "$port" "$cli" mcp $(jq -r '.mcp.live[]' <<<"$app"))
+    live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$port" "$cli" mcp $(jq -r '.mcp.live[]' <<<"$app"))
   fi
   [ -n "$live" ] || { echo "$id's live server didn't answer on port $port" >&2; exit 1; }
   if [ "$was_open" = no ]; then pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true; fi

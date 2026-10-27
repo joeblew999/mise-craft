@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-#MISE description="Make Claude Desktop's servers from this repo match .mcp.json (the apps installed here): replaces the ones it added before, never touches others. Quit Claude Desktop first; undo with desktop:uninstall."
+#MISE description="Make Claude Desktop's servers from this repo match .mcp.json (the apps installed here): replaces the ones it added before, never touches others. Quit Claude Desktop first; undo with claude-desktop:uninstall."
 # Lineage:
-#   run by   `mise run desktop:install`
-#   reads    .mcp.json (written by mise-tasks/claude/sync for the apps installed here)
+#   run by   `mise run claude-desktop:install`
+#   reads    .mcp.json (written by mise-tasks/claude-code/sync for the apps installed here)
 #   writes   ~/Library/Application Support/Claude/claude_desktop_config.json
-#   undone   mise-tasks/desktop/uninstall
+#   undone   mise-tasks/claude-desktop/uninstall
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 config=${CLAUDE_DESKTOP_CONFIG:-"$HOME/Library/Application Support/Claude/claude_desktop_config.json"}
@@ -17,7 +17,7 @@ fi
 
 # The servers in .mcp.json, rewritten for Claude Desktop, which starts them outside this repo with a
 # minimal PATH: mise by its full path, and `-C <repo>` so mise uses this repo's mise.toml (and runs
-# the server from the repo). That `-C <repo>` is also how desktop:uninstall finds our entries.
+# the server from the repo). That `-C <repo>` is also how claude-desktop:uninstall finds our entries.
 ours=$(jq --arg mise "$(command -v mise)" --arg root "$root" \
   '.mcpServers | map_values(.command = $mise | .args = ["-C", $root] + .args)' "$root/.mcp.json")
 

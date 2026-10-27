@@ -1,7 +1,7 @@
 #!/bin/sh
 # Start an MCP server that drives a Craft desktop app, opening the app with its control port first.
 # For apps whose `<app>-cli mcp` can't open the app itself (CADCraft's `--launch` can).
-# Usage: mcp-open-app.sh <App> <port> <mcp server command...>
+# Usage: app-open.sh <App> <port> <mcp server command...>
 # stdin and stdout carry the MCP client's messages, so nothing before the exec may touch them.
 #
 # Lineage:

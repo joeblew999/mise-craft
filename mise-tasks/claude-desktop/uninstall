@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#MISE description="Remove the MCP servers desktop:install added to Claude Desktop, leaving the rest of its config as it was. Quit Claude Desktop first."
+#MISE description="Remove the MCP servers claude-desktop:install added to Claude Desktop, leaving the rest of its config as it was. Quit Claude Desktop first."
 # Lineage:
-#   run by   `mise run desktop:uninstall`
+#   run by   `mise run claude-desktop:uninstall`
 #   writes   ~/Library/Application Support/Claude/claude_desktop_config.json
-#   undoes   mise-tasks/desktop/install
+#   undoes   mise-tasks/claude-desktop/install
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 config=${CLAUDE_DESKTOP_CONFIG:-"$HOME/Library/Application Support/Claude/claude_desktop_config.json"}
@@ -13,7 +13,7 @@ if [ -z "${CLAUDE_DESKTOP_CONFIG:-}" ] && pgrep -x Claude >/dev/null; then
 fi
 [ -f "$config" ] || exit 0
 
-# Our entries are the ones desktop:install pointed at this repo with `-C <repo>`.
+# Our entries are the ones claude-desktop:install pointed at this repo with `-C <repo>`.
 mine='(.mcpServers // {}) | to_entries[] | select(.value.args[0:2] == ["-C", $root]) | .key'
 removed=$(jq -r --arg root "$root" "$mine" "$config")
 [ -n "$removed" ] || { echo "nothing to remove"; exit 0; }

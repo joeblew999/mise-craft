@@ -3,8 +3,8 @@
 # latest release, published platforms, MCP docs, the port its docs use). Changes nothing else.
 #
 # Lineage:
-#   run by   `mise run fetch` in design/ (design/mise.toml)
-#   reads    design/apps.json, design/family.json and design/full.jq (each app's repo); GitHub
+#   run by   `mise run upstream:fetch` in design/ (design/mise.toml)
+#   reads    design/apps.json, design/family.json and design/app-merge.jq (each app's repo); GitHub
 #            through gh (each repo's latest release, README and docs)
 #   writes   the upstream block of each app in design/apps.json, and nothing else
 set -euo pipefail
@@ -15,7 +15,7 @@ platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
 
 upstream='{}'
 for id in $(jq -r '.apps[].id' apps.json); do
-  repo=$(jq -r --arg id "$id" --slurpfile fam family.json -L . 'include "full"; .apps[] | select(.id == $id) | full($fam[0]) | .repo' apps.json)
+  repo=$(jq -r --arg id "$id" --slurpfile fam family.json -L . 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0]) | .repo' apps.json)
   release=$(gh release view -R "$repo" --json tagName,assets)
   about=$(gh repo view "$repo" --json description --jq .description)
   docs=""

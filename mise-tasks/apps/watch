@@ -5,7 +5,7 @@
 #   run by   `mise run <app>:watch` (mise.toml), or directly
 #   reads    servers.json, ~/.claude.json; `mise which` (refuses an app that is not installed)
 #   runs     `claude mcp add-json --scope local`, which writes this project's entry in
-#            ~/.claude.json; Claude Code then starts the server, via scripts/mcp-open-app.sh
+#            ~/.claude.json; Claude Code then starts the server, via scripts/app-open.sh
 #            for apps that can't open themselves
 #   undone   mise-tasks/apps/unwatch
 set -euo pipefail

@@ -1,7 +1,7 @@
 # Lineage: written by hand. An app's full description: design/family.json with the app's overrides
 # laid over it (objects merge; arrays and values replace), then {id}, {name}, {version} and {port}
-# filled in. Read by the validate stage in design/mise.toml, design/generate and design/check, so
-# all three see the same app. Use with: jq --slurpfile fam family.json -L . 'include "full"; ...'
+# filled in. Read by the validate stage in design/mise.toml, design/config-generate and design/app-check, so
+# all three see the same app. Use with: jq --slurpfile fam family.json -L . 'include "app-merge"; ...'
 
 def full($fam):
   . as $a

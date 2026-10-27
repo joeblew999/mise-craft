@@ -2,7 +2,7 @@
   "//": [
     "Lineage: written by hand. What every Craft app shares, defined once as the default for every app in design/apps.json.",
     "An app's overrides lay over this (objects merge; arrays and values replace), then {id}, {name}, {version} and {port} are filled in from the app.",
-    "Read by: the validate stage in design/mise.toml (stage 4), design/generate (stage 5) and design/check (stage 2)."
+    "Read by: the validate stage in design/mise.toml (stage 4), design/config-generate (stage 5) and design/app-check (stage 2)."
   ],
   "repo": "storytold/{id}",
   "install": {

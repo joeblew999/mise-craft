@@ -40,7 +40,7 @@ Each app lists these by number in its `problems` in `design/apps.json`.
   them.
 - **26. FilmCraft's help has no `mcp [...]` usage line**, only `mcp  MCP server on stdio (headless,
   or --bridge to the live app)`; `--bridge <127.0.0.1:PORT>` is listed among its general options.
-  `check` records that description as its usage.
+  `app:check` records that description as its usage.
 
 ## Limits to live with
 
@@ -56,11 +56,11 @@ Kept so they don't happen again.
 
 - **1. mise's `latest` lagged behind new releases** (its `minimum_release_age`). Versions are pinned
   exactly.
-- **2. mise saved the desktop apps' DMGs without unpacking them.** `scripts/unpack-dmg.sh` copies
+- **2. mise saved the desktop apps' DMGs without unpacking them.** `scripts/dmg-unpack.sh` copies
   the app out after install.
 - **3. `open -a <App>` couldn't find an app macOS had never registered** (CADCraft's `--launch`
   uses it). The unpack step registers each app; uninstall unregisters it.
-- **4. An apostrophe in my own guard broke `unpack-dmg.sh`.** Caught by testing before commit.
+- **4. An apostrophe in my own guard broke `dmg-unpack.sh`.** Caught by testing before commit.
 - **6. Running a live server as a mise task with `depends` lost Claude's first messages.** Live
   servers run through `mise exec` instead.
 - **7. Live servers in `.mcp.json` opened desktop apps whenever Claude Code started.** They're

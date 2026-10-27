@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Write .mcp.json, Claude Code's project servers, from servers.json: the headless server of each checked app that is installed here. Run by <app>:install and <app>:uninstall."
 # Lineage:
-#   run by   mise-tasks/apps/install and uninstall, or `mise run claude:sync`
+#   run by   mise-tasks/apps/install and uninstall, or `mise run claude-code:sync`
 #   reads    servers.json; `mise ls` (which CLIs are installed here)
 #   writes   .mcp.json, a runtime file in the repo folder that is not committed (.gitignore)
 set -euo pipefail
@@ -9,8 +9,8 @@ cd "$(dirname "$0")/../.."
 installed=$(mise ls --json 2>/dev/null | jq -c '[to_entries[] | select(any(.value[]; .installed)) | .key]')
 jq --argjson installed "$installed" '{
   "//": [
-    "Generated at runtime by mise-tasks/claude/sync from servers.json and the apps installed on this machine; not committed. <app>:install and <app>:uninstall rewrite it.",
-    "Read by: Claude Code (and VS Code) at session start, mise-tasks/desktop/install and mise-tasks/status."
+    "Generated at runtime by mise-tasks/claude-code/sync from servers.json and the apps installed on this machine; not committed. <app>:install and <app>:uninstall rewrite it.",
+    "Read by: Claude Code (and VS Code) at session start, mise-tasks/claude-desktop/install and mise-tasks/apps/status."
   ],
   mcpServers: (.headless | with_entries(select(.key + "-cli" as $c | $installed | index($c))))
 }' servers.json >.mcp.json.tmp

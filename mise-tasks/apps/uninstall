@@ -4,8 +4,8 @@
 # Lineage:
 #   run by   `mise run <app>:uninstall` (mise.toml), or directly
 #   runs     mise-tasks/apps/unwatch (only removes a live server this repo added), lsregister -u
-#            (undoes scripts/unpack-dmg.sh's registration), `mise uninstall --all <app> <app>-cli`,
-#            then mise-tasks/claude/sync, which rewrites .mcp.json
+#            (undoes scripts/dmg-unpack.sh's registration), `mise uninstall --all <app> <app>-cli`,
+#            then mise-tasks/claude-code/sync, which rewrites .mcp.json
 #   undoes   mise-tasks/apps/install
 set -euo pipefail
 lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
@@ -13,7 +13,7 @@ installs=${MISE_DATA_DIR:-$HOME/.local/share/mise}/installs
 for app in $usage_app; do
   # A live server for an app that is gone could only fail, so stop watching it first.
   mise run apps:unwatch "$app"
-  # Undo scripts/unpack-dmg.sh's registration before the .app is deleted.
+  # Undo scripts/dmg-unpack.sh's registration before the .app is deleted.
   for version in "$installs/$app"/*; do
     [ -d "$version" ] && [ ! -L "$version" ] || continue
     for bundle in "$version"/*.app; do
@@ -22,4 +22,4 @@ for app in $usage_app; do
   done
   mise uninstall --all "$app" "$app-cli"
 done
-mise run claude:sync
+mise run claude-code:sync

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #MISE description="Show each Craft app: pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code and Claude Desktop."
 # Lineage:
-#   run by   `mise run status`
+#   run by   `mise run apps:status`
 #   reads    design/apps.json, `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config
 #            (changes nothing)
 set -euo pipefail
