@@ -211,3 +211,9 @@ These rules are for people and agents alike; Claude Code reads this README throu
   its headless server goes in `.mcp.json` and its live server in `mcp-live.json`.
 - **This README is the only documentation.** CLAUDE.md only imports it; don't add other Markdown
   files.
+- **Never make memory files.** Agents don't keep notes about this repo anywhere else, such as
+  Claude Code's memory folder: anything worth remembering goes in this README.
+- **Make real changes and test them end to end** (install, MCP handshake, a tool call that shows up
+  in the app), instead of proposing throwaway experiments first.
+- **Run slow downloads in the background** and keep the conversation going; ask before anything
+  that would download gigabytes.
