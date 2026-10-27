@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 #MISE description="Regenerate mise.toml from scripts/gen-mise-toml.sh, then update mise.lock. It lives here, not in mise.toml, so it never rewrites its own definition."
+# Lineage:
+#   run by   `mise run gen`
+#   runs     scripts/gen-mise-toml.sh, then `mise lock`
+#   writes   mise.toml, mise.lock
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # Generate into a temporary file, so a failed run leaves mise.toml as it was.

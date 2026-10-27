@@ -1,3 +1,5 @@
+<!-- Lineage: written by hand; Claude Code reads it through CLAUDE.md. -->
+
 # mise-craft
 
 Install the apps of the [Craft App Suite](https://getartcraft.com/apps) with
@@ -162,8 +164,10 @@ These rules are for people and agents alike; Claude Code reads this README throu
   from mise tasks and hooks (`hdiutil`, `lsregister`, `open`) are fine.
 - **Change `scripts/gen-mise-toml.sh`, not `mise.toml`**, then run `mise run gen`. Tasks live in
   `mise-tasks/`; `gen` is one of them, so regenerating never rewrites its own definition.
-- **Generated files say so at the top**, naming what generates them: `mise.toml`
-  (`scripts/gen-mise-toml.sh`) and `mise.lock` (`mise lock`). Every other file is written by hand.
+- **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
+  writes, and what undoes it. Generated files also say what generates them: `mise.toml`
+  (`scripts/gen-mise-toml.sh`) and `mise.lock` (`mise lock`); every other file is written by hand.
+  JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;
   then add its headless server to `.mcp.json`, its live server to `mcp-live.json`, and its row to

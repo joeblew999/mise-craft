@@ -1,4 +1,5 @@
 {
+  "//": "Lineage: written by hand. Read by mise-tasks/apps/watch, which copies one entry into Claude Code, and by scripts/gen-mise-toml.sh, which gives each app listed here watch and unwatch tasks. Every entry but CADCraft runs scripts/mcp-open-app.sh.",
   "mcpServers": {
     "cadcraft-app": {
       "command": "mise",

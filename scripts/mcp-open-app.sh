@@ -3,6 +3,10 @@
 # For apps whose `<app>-cli mcp` can't open the app itself (CADCraft's `--launch` can).
 # Usage: mcp-open-app.sh <App> <port> <mcp server command...>
 # stdin and stdout carry the MCP client's messages, so nothing before the exec may touch them.
+#
+# Lineage:
+#   run by   Claude Code, starting a live server that <app>:watch added (defined in mcp-live.json)
+#   runs     `open -a <App> --args --control <port>`, then the MCP server command
 set -e
 app=$1 port=$2
 shift 2

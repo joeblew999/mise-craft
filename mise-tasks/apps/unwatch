@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 #MISE description="Remove apps' live MCP servers that apps:watch added to Claude Code: `mise run apps:unwatch cadcraft`."
 #USAGE arg "<app>" var=#true help="An app, such as cadcraft"
+# Lineage:
+#   run by   `mise run <app>:unwatch` (mise.toml), or directly
+#   runs     `claude mcp remove --scope local`, which edits this project's entry in ~/.claude.json
+#   undoes   mise-tasks/apps/watch
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 for app in $usage_app; do

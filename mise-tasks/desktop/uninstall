@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 #MISE description="Remove the MCP servers desktop:install added to Claude Desktop, leaving the rest of its config as it was. Quit Claude Desktop first."
+# Lineage:
+#   run by   `mise run desktop:uninstall`
+#   writes   ~/Library/Application Support/Claude/claude_desktop_config.json
+#   undoes   mise-tasks/desktop/install
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 config=${CLAUDE_DESKTOP_CONFIG:-"$HOME/Library/Application Support/Claude/claude_desktop_config.json"}

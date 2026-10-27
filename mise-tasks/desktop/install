@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 #MISE description="Add this repo's MCP servers (from .mcp.json) to Claude Desktop. Quit Claude Desktop first; undo with desktop:uninstall."
+# Lineage:
+#   run by   `mise run desktop:install`
+#   reads    .mcp.json
+#   writes   ~/Library/Application Support/Claude/claude_desktop_config.json
+#   undone   mise-tasks/desktop/uninstall
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 config=${CLAUDE_DESKTOP_CONFIG:-"$HOME/Library/Application Support/Claude/claude_desktop_config.json"}

@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #MISE description="Show each Craft app: pinned version, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code (.mcp.json) and Claude Desktop."
+# Lineage:
+#   run by   `mise run status`
+#   reads    `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config (changes nothing)
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"

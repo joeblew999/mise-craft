@@ -1,6 +1,11 @@
 #!/bin/sh
 # mise postinstall for a tool downloaded as a macOS DMG. mise saves the DMG without unpacking it,
 # so copy the .app bundle out of the image and remove the image.
+#
+# Lineage:
+#   run by   mise, as the postinstall of each desktop app tool in mise.toml
+#   writes   <app>.app in the tool's install folder; registers it with LaunchServices
+#   undone   mise-tasks/apps/uninstall
 set -e
 cd "$MISE_TOOL_INSTALL_PATH"
 dmg=$(ls) # the download is the only file in the install directory
