@@ -85,12 +85,16 @@
       "args": [
         "exec",
         "--",
+        "sh",
+        "scripts/app-open.sh",
+        "CADCraft",
+        "--control",
+        "7979",
+        "-",
         "cadcraft-cli",
         "mcp",
         "--connect",
-        "127.0.0.1:7979",
-        "--lazy",
-        "--launch"
+        "127.0.0.1:7979"
       ]
     },
     "deckcraft-app": {

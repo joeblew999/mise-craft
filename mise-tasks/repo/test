@@ -4,7 +4,8 @@
 #   run by   `mise run repo:test`
 #   reads    this repo's last commit (it clones it, so uncommitted changes aren't tested); the
 #            Claude Desktop config, which it only copies
-#   runs     every runtime task and every design stage in the clone, with CADCraft as the app
+#   runs     every runtime task and every design stage in the clone, with CADCraft as the app; it
+#            opens CADCraft and closes it again, unless it was already open
 #   writes   only inside a temporary folder that it deletes at the end: the clone, its own mise
 #            config, and its own Claude Code config ($CLAUDE_CONFIG_DIR), so ~/.claude.json is
 #            never touched. Claude Desktop's tasks run on a copy of its config.
@@ -19,6 +20,8 @@ export CLAUDE_CONFIG_DIR="$work/claude"
 # The clone's own .mcp.json servers would otherwise wait for approval in this fresh Claude config.
 echo '{"enableAllProjectMcpServers": true}' >"$CLAUDE_CONFIG_DIR/settings.json"
 cadcraft_before=$(mise ls --installed --json cadcraft-cli 2>/dev/null | jq 'length')
+# Watching CADCraft opens it; the test closes it again if it wasn't open already.
+cadcraft_open=$(pgrep -x CADCraft >/dev/null && echo yes || echo no)
 
 passed=0 failed=0
 step() {
@@ -38,6 +41,7 @@ broken() {
   cp "$work/apps.good" design/apps.json
 }
 cleanup() {
+  [ "$cadcraft_open" = no ] && pkill -x CADCraft
   cd "$work/repo" 2>/dev/null && {
     [ "$cadcraft_before" = 0 ] && mise run cadcraft:uninstall >/dev/null 2>&1
     mise trust --untrust >/dev/null 2>&1
@@ -65,6 +69,7 @@ step "CADCraft's live server connects" sh -c 'claude mcp list 2>&1 | grep -q "^c
 step "apps:status shows the live server" sh -c 'mise run apps:status 2>/dev/null | grep -q "^cadcraft .*cadcraft-app"'
 step "cadcraft:unwatch" mise run cadcraft:unwatch
 step "the live server is gone" sh -c '! claude mcp list 2>&1 | grep -q "^cadcraft-app:"'
+[ "$cadcraft_open" = no ] && pkill -x CADCraft
 step "watch refuses an app that isn't installed" sh -c '! mise run wordcraft:watch'
 
 # Design time, in stage order.

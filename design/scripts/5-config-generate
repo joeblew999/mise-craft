@@ -102,9 +102,9 @@ exit "$status"
 EOF
 }
 
-# The headless and live server of each checked app, for every host. Apps that can't open themselves
-# go through scripts/app-open.sh, which opens the app with its control port first; hosts run
-# these from the repo root, so the script's path is relative to that.
+# The headless and live server of each checked app, for every host. Live servers go through
+# scripts/app-open.sh, which opens the app with its control port first; hosts run these from the
+# repo root, so the script's path is relative to that.
 servers_json() {
   jq '{
     "//": [
@@ -115,11 +115,9 @@ servers_json() {
     headless: ([.[] | select(.checked) | {key: .id,
       value: {command: "mise", args: (["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.headless)}}] | from_entries),
     live: ([.[] | select(.checked) | {key: "\(.id)-app",
-      value: {command: "mise", args: (
-        if .mcp.opens_itself then ["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.live
-        else ["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")), .control, (.port | tostring),
-          (.control_token_env // "-"), .install.cli_bin, .mcp.subcommand] + .mcp.live
-        end)}}] | from_entries)
+      value: {command: "mise", args: (["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")),
+        .control, (.port | tostring), (.control_token_env // "-"), .install.cli_bin, .mcp.subcommand] + .mcp.live)}}]
+      | from_entries)
   }' <<<"$full"
 }
 

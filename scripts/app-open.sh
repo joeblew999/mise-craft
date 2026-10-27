@@ -1,15 +1,14 @@
 #!/bin/sh
-# Start an MCP server that drives a Craft desktop app, opening the app with its control port first.
-# For apps whose `<app>-cli mcp` can't open the app itself (CADCraft's `--launch` can).
-# Usage: app-open.sh <App> <control option> <port> <token variable> <mcp server command...>
-# (the control option and token variable are family.json's control and control_token_env; a token
-# variable of - means the app keeps its own token)
-# stdin and stdout carry the MCP client's messages, so nothing before the exec may touch them.
-#
 # Lineage:
 #   run by   Claude Code, starting a live server that <app>:watch added (defined in servers.json)
 #   runs     `open -a <App> [--env <token variable>=<fresh token>] --args <control option> <port>`,
 #            then the MCP server command
+#
+# Start an MCP server that drives a Craft desktop app, opening the app with its control port first.
+# Usage: app-open.sh <App> <control option> <port> <token variable> <mcp server command...>
+# (the control option and token variable are family.json's control and control_token_env; a token
+# variable of - means the app keeps its own token)
+# stdin and stdout carry the MCP client's messages, so nothing before the exec may touch them.
 set -e
 app=$1 control=$2 port=$3 token_env=$4
 shift 4

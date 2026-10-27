@@ -18,6 +18,6 @@ ditto "$mnt/$app" "$app"
 hdiutil detach -quiet "$mnt"
 rmdir "$mnt"
 rm "$dmg"
-# Register the app with LaunchServices: `<app>-cli mcp --launch` opens it by name (`open -a`),
+# Register the app with LaunchServices: scripts/app-open.sh opens it by name (`open -a`),
 # which can't find an app outside /Applications that macOS has never seen.
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app"

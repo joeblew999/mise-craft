@@ -8,8 +8,7 @@
 # Lineage:
 #   run by   `mise run app:check <app>` in design/ (design/mise.toml)
 #   reads    design/family.json, design/apps.json, design/scripts/app-merge.jq; the app's installed CLI and bundle
-#   runs     the app's CLI and both its MCP servers, the live one through scripts/app-open.sh unless
-#            the server opens the app itself
+#   runs     the app's CLI and both its MCP servers, the live one through scripts/app-open.sh
 #   writes   nothing: it prints what it found, and exits non-zero if something didn't work
 set -euo pipefail
 cd "$(dirname "$0")/.."  # design/, where the registry is
@@ -69,12 +68,8 @@ if [ -n "$port" ]; then
   if ! pgrep -x "$executable" >/dev/null; then
     trap 'pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true' EXIT
   fi
-  if [ "$(jq -r '.mcp.opens_itself' <<<"$app")" = true ]; then
-    live=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
-  else
-    live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" "$token_env" \
-      "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
-  fi
+  live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" "$token_env" \
+    "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
   [ -n "$live" ] || { echo "$id's live server didn't answer on port $port" >&2; exit 1; }
 else
   echo "$id has no port in apps.json yet, so its live server isn't checked" >&2

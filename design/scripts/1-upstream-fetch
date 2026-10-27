@@ -18,6 +18,19 @@ cd "$(dirname "$0")/.."  # design/, where the registry is
 # doesn't use.
 platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
 
+# gh, given 30 seconds: one slow GitHub request mustn't hang the whole stage. gh ignores the alarm
+# signal, so a watchdog stops it instead.
+gh30() {
+  gh "$@" &
+  local pid=$!
+  ( sleep 30; kill "$pid" ) >/dev/null 2>&1 &
+  local dog=$!
+  wait "$pid"
+  local status=$?
+  kill "$dog" 2>/dev/null
+  return "$status"
+}
+
 row='%-12s %-8s %-8s %-9s %-4s %-16s %s\n'
 printf "$row" APP PINNED LATEST "DOCS PORT" DOCS "CLI PLATFORMS" "APP PLATFORMS"
 for id in $(jq -r '.apps[].id' apps.json); do
@@ -29,16 +42,18 @@ for id in $(jq -r '.apps[].id' apps.json); do
   # The start of the CLI's and the desktop app's asset names, such as cadcraft-cli- and cadcraft-.
   cli_prefix=$(jq -r '.install.cli | split("*")[0]' <<<"$app")
   app_prefix=$(jq -r '.install.app | split("*")[0]' <<<"$app")
-  release=$(gh release view -R "$repo" --json tagName,assets)
+  # Without its release, an app's row says so and the stage goes on to the next app.
+  if ! release=$(gh30 release view -R "$repo" --json tagName,assets); then
+    printf "$row" "$id" "$(jq -r .version <<<"$app")" "?" "?" "?" "GitHub didn't answer" ""
+    continue
+  fi
+  # The README and the two docs, each empty if the app doesn't have it.
+  doc() { gh30 api "repos/$repo/$1" --jq .content 2>/dev/null | base64 -d 2>/dev/null || true; }
+  mcp_text=$(doc "contents/$mcp_doc")
   docs=-
-  if gh api "repos/$repo/contents/$mcp_doc" --silent 2>/dev/null; then docs=yes; fi
+  [ -z "$mcp_text" ] || docs=yes
   # The first `<app> --control <port>` in the README and the docs is the port the docs use.
-  text=$( {
-    gh api "repos/$repo/readme" --jq .content | base64 -d
-    for f in "$mcp_doc" "$control_doc"; do
-      gh api "repos/$repo/contents/$f" --jq .content 2>/dev/null | base64 -d 2>/dev/null || true
-    done
-  } )
+  text=$(doc readme; echo "$mcp_text"; doc "contents/$control_doc")
   port=$(grep -o -E -- "$id $control [0-9]+" <<<"$text" | head -1 | grep -o -E '[0-9]+$' || true)
   latest=$(jq -r '.tagName | ltrimstr("v")' <<<"$release")
   cli_platforms=$(jq -r --arg cli "$cli_prefix" "[.assets[].name | select(startswith(\$cli)) | $platform] | unique | join(\",\")" <<<"$release")

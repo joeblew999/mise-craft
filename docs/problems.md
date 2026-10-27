@@ -2,10 +2,17 @@
 
 # Problems
 
-Every problem found so far, and how particular apps behave, sorted by what it needs. The numbers
-never change. Only the first section needs anything done.
+Which apps don't work comes first; everything below it can wait. The numbers never change.
 
-## Open: needs doing
+## Apps that don't work yet
+
+- **29. LightCraft, PdfCraft, PhotoCraft, SoundCraft, WordCraft: never checked.** They can be
+  installed, but get no MCP servers. *Next: install, check and record each, one at a time.*
+
+Working, as last checked: CADCraft, DeckCraft, DesignCraft, EffectCraft, FigCraft, FilmCraft,
+GridCraft, VectorCraft. `mise run apps:status` shows each app's checked version.
+
+## Later
 
 - **13. Agents can read and write any file you can.** The headless MCP servers run with your
   full file access. Four of the CLIs can be confined to chosen folders
@@ -13,14 +20,6 @@ never change. Only the first section needs anything done.
   FigCraft's live server (`--attach`) refuses those options: there the app confines it, and takes
   the same options alongside `--control`.
   *Next: the owner picks the folders.*
-- **5. CADCraft's first live call can fail** with "missing or invalid control token", right after
-  `--launch` opens the app: its bridge reads the old token before the app writes a new one. Asking
-  again works, and the error says so. It's CADCraft's bug (upstream #2087).
-  *Next: open CADCraft through `scripts/app-open.sh` like the other apps, which waits for the
-  app's port before the server starts, and see whether the first call then works.*
-- **29. Five apps have never been checked**: LightCraft, PdfCraft, PhotoCraft, SoundCraft and
-  WordCraft. They can be installed, but get no MCP servers. *Next: install, check and record each,
-  one at a time.*
 - **30. Inside `design/`, mise also loads the repo's root `mise.toml`**, so runtime tasks run from
   there too (`mise -C design run cadcraft:install` works). Design time and runtime aren't fully
   apart. *Next: find a way to keep `design/` from inheriting the root config.*
@@ -66,7 +65,7 @@ Kept so they don't happen again.
   exactly.
 - **2. mise saved the desktop apps' DMGs without unpacking them.** `scripts/dmg-unpack.sh` copies
   the app out after install.
-- **3. `open -a <App>` couldn't find an app macOS had never registered** (CADCraft's `--launch`
+- **3. `open -a <App>` couldn't find an app macOS had never registered** (`scripts/app-open.sh`
   uses it). The unpack step registers each app; uninstall unregisters it.
 - **4. An apostrophe in my own guard broke `dmg-unpack.sh`.** Caught by testing before commit.
 - **6. Running a live server as a mise task with `depends` lost Claude's first messages.** Live
@@ -94,5 +93,13 @@ Kept so they don't happen again.
   that it ran. The test now counts the apps.
 - **33. Scripts hard-coded what every app shares** (`mcp`, `--control`, `docs/mcp.md`) instead of
   reading `design/family.json`, so an app couldn't override them.
+- **5. CADCraft's first live call failed** with "missing or invalid control token" when its server
+  opened the app itself (`--launch`): it read the old token before the app wrote a new one
+  (CADCraft's bug, upstream #2087). CADCraft now opens through `scripts/app-open.sh` like every
+  other app, which waits for the app's port first; in three cold starts the first call drew every
+  time. Its override, and `opens_itself`, are gone.
+- **35. `upstream:fetch` could hang on one slow GitHub request**, and stopped without a word when
+  one failed. Each request now gets 30 seconds (a watchdog stops it: `gh` ignores the alarm
+  signal), each doc is fetched once, and an app GitHub doesn't answer for shows `?` in its row.
 - **34. `watch`, `unwatch` and `status` ignored `CLAUDE_CONFIG_DIR`**, so the test wrote into your
   own Claude Code config. They honour it now, and `repo:test` uses a config of its own.
