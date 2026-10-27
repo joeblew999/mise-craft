@@ -155,6 +155,10 @@ CLAUDE.md                    read by Claude Code; imports this README
 - **The headless MCP servers can read and write any file you can.** This repo passes no
   `--automation-read-root` / `--automation-write-root`; an app's `mcp.file_roots` in `apps.json` says
   whether its CLI could confine it. A live server is confined only by the app it drives.
+- **A checked app that isn't installed shows as a failed server in Claude Code.** `.mcp.json` lists
+  the headless server of every checked app, and with auto-install off mise won't fetch a missing one,
+  so `claude mcp list` shows "Failed to connect" for it. Install the app with `mise run <app>:install`,
+  or ignore it.
 - **Each app's own problems** are in its `limits` in [apps.json](apps.json).
 - **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile, so
   name the tools: `mise install --locked cadcraft cadcraft-cli`.
