@@ -1,5 +1,5 @@
 {
-  "//": "Lineage: the registry of Craft apps. Written by hand, except each app's upstream block, which `mise run apps:fetch` rewrites from GitHub (docs_port is the port the app's own docs use in examples). Read by mise-tasks/gen, which generates mise.toml, .mcp.json and mcp-live.json from it, and by mise-tasks/status. An app with an mcp block is checked end to end; in mcp.live, {port} stands for mcp.port.",
+  "//": "Lineage: the registry of Craft apps. Written by hand, except each app's upstream block, which `mise run apps:fetch` rewrites from GitHub (docs_port is the port the app's own docs use in examples). Read by mise-tasks/gen, which generates mise.toml, .mcp.json and mcp-live.json from it, and by mise-tasks/status. An app with an mcp block is checked end to end. Its mcp fields: port; live, the args that drive the running app ({port} stands for mcp.port); headless, extra args for the headless server; opens_itself; usage, the CLI's own mcp usage line; opens_with, what a freshly opened app holds, and first_step, the tool call to make before working when it holds nothing to work on; live_only_tools, tools only the live server has; look, the tools for seeing the result; file_roots, whether the CLI can confine the agent's file access with --automation-read-root / --automation-write-root (this repo passes neither); control_token, where the app keeps its control token. limits are things that go wrong; notes are other things worth knowing.",
   "apps": [
     {
       "id": "cadcraft",
@@ -23,7 +23,19 @@
           "--lazy",
           "--launch"
         ],
-        "opens_itself": true
+        "opens_itself": true,
+        "usage": "cadcraft-cli mcp [--connect HOST:PORT [--lazy] [--launch]]",
+        "opens_with": "a new drawing",
+        "live_only_tools": [
+          "screenshot",
+          "ui_click",
+          "ui_inspect"
+        ],
+        "look": [
+          "render"
+        ],
+        "file_roots": false,
+        "control_token": "~/.cache/cadcraft-control-{port}.token"
       },
       "checked": {
         "version": "0.13.0",
@@ -31,6 +43,9 @@
       },
       "limits": [
         "The first live call right after --launch opens the app can fail with 'missing or invalid control token': the bridge reads the old token before the app writes a new one (upstream #2087). The error says it is safe to send again, and the retry works."
+      ],
+      "notes": [
+        "--launch opens the app with `open -a CADCraft`, which only finds the copy mise installed because scripts/unpack-dmg.sh registers it with macOS."
       ],
       "upstream": {
         "about": "CADCraft: computer-aided design and drafting — an open-source, clean-room AutoCAD-style app in pure Rust",
@@ -101,12 +116,24 @@
         "live": [
           "--connect",
           "127.0.0.1:{port}"
-        ]
+        ],
+        "usage": "designcraft-cli mcp [--connect PORT] [--sample] [--automation-read-root DIR]... [--automation-write-root DIR]...",
+        "opens_with": "a new document",
+        "live_only_tools": [],
+        "look": [
+          "render_page",
+          "export_png",
+          "screenshot"
+        ],
+        "file_roots": true
       },
       "checked": {
         "version": "0.13.0",
         "on": "2026-10-26"
       },
+      "notes": [
+        "--connect takes PORT or HOST:PORT (its docs say so; its usage line shows PORT)."
+      ],
       "upstream": {
         "about": "DesignCraft: An open-source page and layout design editor written by scratch in pure Rust",
         "latest": "0.13.0",
@@ -146,7 +173,31 @@
         "live": [
           "--bridge",
           "{port}"
-        ]
+        ],
+        "usage": "effectcraft-cli mcp [--autosave | --bridge PORT] [--automation-read-root DIR] [--automation-write-root DIR]",
+        "opens_with": "an empty project with no composition",
+        "first_step": {
+          "tool": "command_run",
+          "arguments": {
+            "id": "comp.new"
+          }
+        },
+        "live_only_tools": [
+          "control",
+          "screenshot",
+          "ui_click",
+          "ui_drag",
+          "ui_elements",
+          "ui_inspect",
+          "ui_key",
+          "ui_set",
+          "ui_type"
+        ],
+        "look": [
+          "render_frame",
+          "render_preview"
+        ],
+        "file_roots": true
       },
       "checked": {
         "version": "0.17.0",
@@ -154,6 +205,10 @@
       },
       "limits": [
         "Window screenshots are about 28 MB at full size; the screenshot tool takes max_side to scale them down."
+      ],
+      "notes": [
+        "Its live server connects with --bridge, where the other apps use --connect or --attach.",
+        "Its headless server can keep unsaved work with --autosave; this repo does not pass it."
       ],
       "upstream": {
         "about": "EffectCraft: An open-source motion graphics and compositing tool written by scratch in pure Rust",
@@ -194,7 +249,21 @@
         "live": [
           "--attach",
           "{port}"
-        ]
+        ],
+        "usage": "figcraft-cli mcp [--attach PORT] [--automation-read-root DIR]... [--automation-write-root DIR]...",
+        "opens_with": "no document",
+        "first_step": {
+          "tool": "run_command",
+          "arguments": {
+            "command": "file.new",
+            "params": {}
+          }
+        },
+        "live_only_tools": [],
+        "look": [
+          "screenshot"
+        ],
+        "file_roots": true
       },
       "checked": {
         "version": "0.11.2",
@@ -204,7 +273,7 @@
         "Window screenshots (window: true) need the window on screen: hidden or minimised, the call fails. Without window, screenshot renders the page instead."
       ],
       "notes": [
-        "The app opens with no document; create one (run_command file.new) before adding layers."
+        "--attach refuses --automation-read-root / --automation-write-root: an attached server is confined by the app, which takes the same flags alongside --control."
       ],
       "upstream": {
         "about": "FigCraft: interface design and prototyping; an open-source, clean-room reimplementation of collaborative design workflows in pure Rust",
@@ -274,7 +343,14 @@
         "live": [
           "--connect",
           "{port}"
-        ]
+        ],
+        "usage": "gridcraft-cli mcp [--connect PORT] [--in FILE | --sample NAME]",
+        "opens_with": "a new workbook",
+        "live_only_tools": [],
+        "look": [
+          "screenshot"
+        ],
+        "file_roots": false
       },
       "checked": {
         "version": "0.12.1",
@@ -282,6 +358,10 @@
       },
       "limits": [
         "The screenshot tool needs the window visible: a hidden window draws no frames, so the call times out. Bring GridCraft to the front first."
+      ],
+      "notes": [
+        "Its usage line shows --connect PORT, so this repo passes the port alone.",
+        "Control-channel methods that are not MCP tools, such as ui.focus, can be sent with `gridcraft-cli send <port> <method>`."
       ],
       "upstream": {
         "about": "GridCraft: an open-source, clean-room spreadsheet (Microsoft Excel-style) in pure Rust. By ArtCraft.",
@@ -446,15 +526,29 @@
         "live": [
           "--connect",
           "127.0.0.1:{port}"
-        ]
+        ],
+        "usage": "vectorcraft-cli mcp [--connect ADDR | --headless] [--automation-read-root DIR]... [--automation-write-root DIR]...",
+        "opens_with": "no document",
+        "first_step": {
+          "tool": "run_command",
+          "arguments": {
+            "command": "file.new"
+          }
+        },
+        "live_only_tools": [],
+        "look": [
+          "render_preview",
+          "screenshot",
+          "ui_screenshot"
+        ],
+        "file_roots": true
       },
       "checked": {
         "version": "0.17.0",
         "on": "2026-10-26"
       },
       "notes": [
-        "Its MCP server connects to a running app on port 7979 by default, so the headless server is started with --headless.",
-        "The app opens with no document; create one (run_command file.new) before drawing."
+        "Its MCP server connects to a running app on port 7979 by default, so the headless server is started with --headless."
       ],
       "upstream": {
         "about": "VectorCraft: An open-source, vector art tool written by scratch in pure Rust",

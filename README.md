@@ -60,9 +60,11 @@ connect.
 shows the main points, along with what's installed and running. For each app:
 
 - **Written by hand:** its id, name, GitHub repo, the version pinned here, and the release downloads
-  to install. Once the app is checked end to end, also its app bundle and process name, its control
-  port, how its MCP servers start (`mcp`), which version was checked and when (`checked`), and what
-  goes wrong with it (`limits`) or is worth knowing (`notes`).
+  to install. Once the app is checked end to end, also its app bundle and process name; its control
+  port, how its MCP servers start and everything unusual about them, such as what a fresh app
+  holds, tools only the live server has and whether file access can be confined (`mcp`; the file's
+  `"//"` line explains each field); which version was checked and when (`checked`); and what goes
+  wrong with it (`limits`) or is worth knowing (`notes`).
 - **Fetched from GitHub** by `mise run apps:fetch`, in its `upstream` block: its description, latest
   release, the platforms its CLI and desktop app are published for, its MCP docs, and the port its
   own docs use.
@@ -108,13 +110,18 @@ Files the apps write themselves, such as documents, preferences and control toke
   `apps.json`, CADCraft's `--launch`) opens at the first tool call. For the others,
   [scripts/mcp-open-app.sh](scripts/mcp-open-app.sh) opens the app with its control port and then
   starts the server, so the app opens as soon as its live server starts.
-- **Watching.** `<app>:watch` adds the live server with a `MISE_CRAFT_WATCH` environment variable as
-  its marker, and `<app>:unwatch` removes only servers that carry it, so a server of the same name
+- **Watching.** Live servers are switched on per app instead of living in `.mcp.json` because
+  Claude Code starts every server it knows, at session start and on `claude mcp list`, and starting
+  most live servers opens the app. Turning them off in settings doesn't work either: Claude Code
+  merges `disabledMcpjsonServers` across its settings files, so a server switched off for everyone
+  can't be switched back on for one person. `<app>:watch` adds the live server with a
+  `MISE_CRAFT_WATCH` environment variable as its marker, and `<app>:unwatch` removes only servers that carry it, so a server of the same name
   that you added yourself is never replaced or removed.
 - **Claude Desktop** starts servers outside this repo with a minimal `PATH`, so `desktop:install`
   rewrites each `.mcp.json` entry to call mise by its full path with `-C <this repo>`. That marker
   is how `desktop:uninstall` finds its own entries, leaving the rest of the file byte-for-byte as
-  it was.
+  it was. Claude Desktop rewrites that file while it runs, so both tasks refuse to run while it's
+  open.
 
 ## Files
 
@@ -145,6 +152,9 @@ CLAUDE.md                    read by Claude Code; imports this README
 - **Claude Desktop** is tested on a copy of its config (the servers start the way Claude Desktop
   starts them, and uninstall restores the file exactly) but not yet in Claude Desktop itself, and
   it gets only the headless servers.
+- **The headless MCP servers can read and write any file you can.** This repo passes no
+  `--automation-read-root` / `--automation-write-root`; an app's `mcp.file_roots` in `apps.json` says
+  whether its CLI could confine it. A live server is confined only by the app it drives.
 - **Each app's own problems** are in its `limits` in [apps.json](apps.json).
 - **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile, so
   name the tools: `mise install --locked cadcraft cadcraft-cli`.
@@ -183,8 +193,11 @@ These rules are for people and agents alike; Claude Code reads this README throu
   regenerating never rewrites its own definition.
 - **`mise-tasks/` holds what you run; `scripts/` holds what mise and Claude Code run.**
   `scripts/unpack-dmg.sh` is mise's postinstall hook, and `scripts/mcp-open-app.sh` sits in a live
-  server's command, where stdin and stdout carry MCP messages that `mise run` would disturb. Neither
-  is run by hand.
+  server's command, where stdin and stdout carry MCP messages that `mise run` disturbs: run as a
+  task with `depends`, a live server lost the client's first messages. Neither is run by hand.
+- **Record every unusual thing the moment you find it**: about one app in `apps.json` (a structured
+  `mcp` field if one fits, otherwise `limits` or `notes`), about everything in this README. Never
+  leave it in a test log or a commit message only.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml`,
   `.mcp.json` and `mcp-live.json` (`mise-tasks/gen`), `mise.lock` (`mise lock`), and the `upstream`
