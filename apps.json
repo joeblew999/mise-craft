@@ -185,8 +185,26 @@
         "cli_bin": "figcraft-cli",
         "app": "figcraft-*-macos-universal.dmg"
       },
+      "bundle": {
+        "name": "FigCraft.app",
+        "executable": "FigCraft"
+      },
+      "mcp": {
+        "port": 7983,
+        "live": [
+          "--attach",
+          "{port}"
+        ]
+      },
+      "checked": {
+        "version": "0.11.2",
+        "on": "2026-10-27"
+      },
+      "limits": [
+        "Window screenshots (window: true) need the window on screen: hidden or minimised, the call fails. Without window, screenshot renders the page instead."
+      ],
       "notes": [
-        "Not checked yet; its usage text shows --attach PORT for driving the running app."
+        "The app opens with no document; create one (run_command file.new) before adding layers."
       ],
       "upstream": {
         "about": "FigCraft: interface design and prototyping; an open-source, clean-room reimplementation of collaborative design workflows in pure Rust",

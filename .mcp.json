@@ -28,6 +28,15 @@
         "mcp"
       ]
     },
+    "figcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "figcraft-cli",
+        "mcp"
+      ]
+    },
     "gridcraft": {
       "command": "mise",
       "args": [

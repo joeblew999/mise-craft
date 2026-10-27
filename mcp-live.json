@@ -44,6 +44,21 @@
         "7982"
       ]
     },
+    "figcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/mcp-open-app.sh",
+        "FigCraft",
+        "7983",
+        "figcraft-cli",
+        "mcp",
+        "--attach",
+        "7983"
+      ]
+    },
     "gridcraft-app": {
       "command": "mise",
       "args": [

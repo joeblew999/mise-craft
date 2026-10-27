@@ -135,6 +135,14 @@ run = "mise run apps:install effectcraft"
 description = "Uninstall EffectCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall effectcraft"
 
+[tasks."figcraft:watch"]
+description = "Let Claude drive the FigCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with figcraft:unwatch."
+run = "mise run apps:watch figcraft"
+
+[tasks."figcraft:unwatch"]
+description = "Remove FigCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch figcraft"
+
 [tasks."figcraft:install"]
 description = "Install FigCraft 0.11.2: its CLI (figcraft-cli, with the MCP server) and desktop app. Undo with figcraft:uninstall."
 run = "mise run apps:install figcraft"
