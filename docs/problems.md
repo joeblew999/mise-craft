@@ -48,6 +48,9 @@ GridCraft, VectorCraft. `mise run apps:status` shows each app's checked version.
   `control_token_env` override makes `scripts/app-open.sh` create one and give it to both. So a
   FilmCraft opened some other way can't be driven: quit it first. `open --env` puts the token on
   `open`'s command line for a moment, which FilmCraft's docs advise against.
+- **36. SoundCraft's `mcp --help` starts its server instead of printing help**, and waits for
+  input. `app:check` gives its help commands no input, so the server sees the end of it and stops.
+  Its usage line is in `soundcraft-cli --help`, and it takes `--connect PORT`, the port alone.
 
 ## Limits to live with
 

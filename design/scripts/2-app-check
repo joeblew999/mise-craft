@@ -24,7 +24,9 @@ mise which "$cli" >/dev/null 2>&1 || { echo "$id is not installed: run mise run 
 
 # usage: the CLI's own usage line for its MCP subcommand, the longest one its help shows (some list
 # options only under `mcp --help`), with any continuation lines that start with "[".
-usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" --help 2>&1 || true; mise exec -- "$cli" "$sub" --no-such-option 2>&1 || true; } \
+# No input: a CLI that starts its server instead of printing help (SoundCraft's `mcp --help`) then
+# sees the end of input and stops.
+usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" --help 2>&1 || true; mise exec -- "$cli" "$sub" --no-such-option 2>&1 || true; } </dev/null \
   | awk -v cli="$cli" -v sub_="$sub" '
       function flush() { if (cur != "") { if (length(cur) > length(best)) best = cur; cur = "" } }
       /^[[:space:]]*\[/ && cur != "" { sub(/^[[:space:]]+/, ""); cur = cur " " $0; next }
@@ -38,7 +40,7 @@ usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" -
       END { flush(); print best }')
 # Some CLIs list the subcommand without a bracketed usage line, only a description (problem 26): keep that.
 if [ -z "$usage" ]; then
-  usage=$( { mise exec -- "$cli" --help 2>&1 || true; } | awk -v cli="$cli" -v sub_="$sub" '
+  usage=$( { mise exec -- "$cli" --help 2>&1 || true; } </dev/null | awk -v cli="$cli" -v sub_="$sub" '
     $1 == sub_ && /^[[:space:]]+[^[:space:]]+[[:space:]][[:space:]]+/ { sub(/^[[:space:]]+[^[:space:]]+[[:space:]]+/, ""); print cli " " sub_ ": " $0; exit }')
 fi
 [ -n "$usage" ] || { echo "could not find $cli's $sub usage line" >&2; exit 1; }
