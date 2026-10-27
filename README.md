@@ -33,6 +33,7 @@ mise config (mise ignores it in a project file).
 | Task | Does | Undone by |
 |---|---|---|
 | `status` | Shows each app's pinned version, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
+| `gen` | Regenerates `mise.toml` from `scripts/gen-mise-toml.sh` and updates `mise.lock` | (run it again after editing the script) |
 | `<app>:install` | Installs the app's CLI and desktop app | `<app>:uninstall` |
 | `<app>:uninstall` | Removes every installed version of both and unregisters the app from macOS | `<app>:install` |
 | `<app>:watch` | Adds the app's live MCP server to Claude Code, for this project | `<app>:unwatch` |
@@ -159,8 +160,8 @@ These rules are for people and agents alike; Claude Code reads this README throu
   `.mcp.json`.
 - **mise only.** No Homebrew, no ArtCraft Launcher, no manual DMG installs. macOS built-ins called
   from mise tasks and hooks (`hdiutil`, `lsregister`, `open`) are fine.
-- **Change `scripts/gen-mise-toml.sh`, not `mise.toml`**, then regenerate with
-  `scripts/gen-mise-toml.sh > mise.toml && mise lock`. Tasks live in `mise-tasks/`.
+- **Change `scripts/gen-mise-toml.sh`, not `mise.toml`**, then run `mise run gen`. Tasks live in
+  `mise-tasks/`; `gen` is one of them, so regenerating never rewrites its own definition.
 - **Generated files say so at the top**, naming what generates them: `mise.toml`
   (`scripts/gen-mise-toml.sh`) and `mise.lock` (`mise lock`). Every other file is written by hand.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
