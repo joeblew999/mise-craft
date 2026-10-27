@@ -115,6 +115,9 @@ Files the apps write themselves, such as documents, preferences and control toke
   `apps.json`, CADCraft's `--launch`) opens at the first tool call. For the others,
   [scripts/mcp-open-app.sh](scripts/mcp-open-app.sh) opens the app with its control port and then
   starts the server, so the app opens as soon as its live server starts.
+- **Watching.** `<app>:watch` adds the live server with a `MISE_CRAFT_WATCH` environment variable as
+  its marker, and `<app>:unwatch` removes only servers that carry it, so a server of the same name
+  that you added yourself is never replaced or removed.
 - **Claude Desktop** starts servers outside this repo with a minimal `PATH`, so `desktop:install`
   rewrites each `.mcp.json` entry to call mise by its full path with `-C <this repo>`. That marker
   is how `desktop:uninstall` finds its own entries, leaving the rest of the file byte-for-byte as

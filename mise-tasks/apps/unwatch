@@ -3,14 +3,24 @@
 #USAGE arg "<app>" var=#true help="An app, such as cadcraft"
 # Lineage:
 #   run by   `mise run <app>:unwatch` (mise.toml), or directly
+#   reads    ~/.claude.json
 #   runs     `claude mcp remove --scope local`, which edits this project's entry in ~/.claude.json
 #   undoes   mise-tasks/apps/watch
 set -euo pipefail
-cd "$(dirname "$0")/../.."
+root=$(cd "$(dirname "$0")/../.." && pwd)
+cd "$root"
+# apps:watch marks every server it adds with this env var; anything without it isn't ours.
+marker=MISE_CRAFT_WATCH
 for app in $usage_app; do
-  if claude mcp remove --scope local "$app-app" >/dev/null 2>&1; then
-    echo "removed $app-app"
+  name="$app-app"
+  existing=$(jq -c --arg root "$root" --arg n "$name" \
+    '.projects[$root].mcpServers[$n] // empty' "$HOME/.claude.json" 2>/dev/null || true)
+  if [ -z "$existing" ]; then
+    echo "$name wasn't added"
+  elif [ "$(jq -r --arg m "$marker" '.env[$m] // empty' <<<"$existing")" != 1 ]; then
+    echo "$name wasn't added by this repo; leaving it alone"
   else
-    echo "$app-app wasn't added"
+    claude mcp remove --scope local "$name" >/dev/null
+    echo "removed $name"
   fi
 done

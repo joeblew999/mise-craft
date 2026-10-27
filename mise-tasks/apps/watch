@@ -3,18 +3,32 @@
 #USAGE arg "<app>" var=#true help="An app with a live server in mcp-live.json, such as cadcraft"
 # Lineage:
 #   run by   `mise run <app>:watch` (mise.toml), or directly
-#   reads    mcp-live.json
+#   reads    mcp-live.json, ~/.claude.json
 #   runs     `claude mcp add-json --scope local`, which writes this project's entry in
 #            ~/.claude.json; Claude Code then starts the server, via scripts/mcp-open-app.sh
-#            for every app but CADCraft
+#            for apps that can't open themselves
 #   undone   mise-tasks/apps/unwatch
 set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
+# Every server watch adds carries this env var. A server of the same name without it was added by
+# someone else, so watch and unwatch leave it alone.
+marker=MISE_CRAFT_WATCH
 for app in $usage_app; do
-  server=$(jq -c --arg n "$app-app" '.mcpServers[$n] // empty' mcp-live.json)
+  name="$app-app"
+  server=$(jq -c --arg n "$name" --arg m "$marker" \
+    '.mcpServers[$n] // empty | .env = ((.env // {}) + {($m): "1"})' mcp-live.json)
   [ -n "$server" ] || { echo "$app has no live server in mcp-live.json yet" >&2; exit 1; }
-  claude mcp remove --scope local "$app-app" >/dev/null 2>&1 || true
-  claude mcp add-json --scope local "$app-app" "$server"
+  existing=$(jq -c --arg root "$root" --arg n "$name" \
+    '.projects[$root].mcpServers[$n] // empty' "$HOME/.claude.json" 2>/dev/null || true)
+  if [ -n "$existing" ]; then
+    if [ "$(jq -r --arg m "$marker" '.env[$m] // empty' <<<"$existing")" != 1 ]; then
+      echo "Claude Code already has a server named $name that this repo didn't add; leaving it alone." >&2
+      exit 1
+    fi
+    # Ours: replace it, so it matches the current mcp-live.json.
+    claude mcp remove --scope local "$name" >/dev/null
+  fi
+  claude mcp add-json --scope local "$name" "$server"
 done
 echo "Start a new Claude Code session (or use /mcp) to load them."
