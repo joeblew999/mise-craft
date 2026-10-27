@@ -161,6 +161,8 @@ These rules are for people and agents alike; Claude Code reads this README throu
   from mise tasks and hooks (`hdiutil`, `lsregister`, `open`) are fine.
 - **Change `scripts/gen-mise-toml.sh`, not `mise.toml`**, then regenerate with
   `scripts/gen-mise-toml.sh > mise.toml && mise lock`. Tasks live in `mise-tasks/`.
+- **Generated files say so at the top**, naming what generates them: `mise.toml`
+  (`scripts/gen-mise-toml.sh`) and `mise.lock` (`mise lock`). Every other file is written by hand.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;
   then add its headless server to `.mcp.json`, its live server to `mcp-live.json`, and its row to
