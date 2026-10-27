@@ -33,6 +33,11 @@ usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" mcp --he
         cur = line
       }
       END { flush(); print best }')
+# Some CLIs list mcp without a bracketed usage line, only a description (problem 26): keep that.
+if [ -z "$usage" ]; then
+  usage=$( { mise exec -- "$cli" --help 2>&1 || true; } | awk -v cli="$cli" '
+    /^[[:space:]]+mcp[[:space:]][[:space:]]+/ { sub(/^[[:space:]]+mcp[[:space:]]+/, ""); print cli " mcp: " $0; exit }')
+fi
 [ -n "$usage" ] || { echo "could not find $cli's mcp usage line" >&2; exit 1; }
 
 # bundle: from the installed app itself.

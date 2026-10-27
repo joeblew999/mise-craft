@@ -38,6 +38,9 @@ Each app lists these by number in its `problems` in `design/apps.json`.
   CADCraft's. Its headless server is started with `--headless` (in its `overrides`).
 - **24. DeckCraft's `--help` lists `mcp` without its options.** `deckcraft-cli mcp --help` shows
   them.
+- **26. FilmCraft's help has no `mcp [...]` usage line**, only `mcp  MCP server on stdio (headless,
+  or --bridge to the live app)`; `--bridge <127.0.0.1:PORT>` is listed among its general options.
+  `check` records that description as its usage.
 
 ## Limits to live with
 

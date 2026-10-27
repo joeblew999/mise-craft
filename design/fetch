@@ -4,7 +4,8 @@
 #
 # Lineage:
 #   run by   `mise run fetch` in design/ (design/mise.toml)
-#   reads    design/apps.json; GitHub through gh (each repo's latest release, README and docs)
+#   reads    design/apps.json, design/family.json and design/full.jq (each app's repo); GitHub
+#            through gh (each repo's latest release, README and docs)
 #   writes   the upstream block of each app in design/apps.json, and nothing else
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -14,7 +15,7 @@ platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
 
 upstream='{}'
 for id in $(jq -r '.apps[].id' apps.json); do
-  repo=$(jq -r --arg id "$id" '.apps[] | select(.id == $id) | .repo' apps.json)
+  repo=$(jq -r --arg id "$id" --slurpfile fam family.json -L . 'include "full"; .apps[] | select(.id == $id) | full($fam[0]) | .repo' apps.json)
   release=$(gh release view -R "$repo" --json tagName,assets)
   about=$(gh repo view "$repo" --json description --jq .description)
   docs=""

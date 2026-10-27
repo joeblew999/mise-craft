@@ -312,6 +312,18 @@
       "id": "filmcraft",
       "name": "FilmCraft",
       "version": "0.13.0",
+      "port": 7984,
+      "overrides": {
+        "mcp": {
+          "live": [
+            "--bridge",
+            "127.0.0.1:{port}"
+          ]
+        }
+      },
+      "problems": [
+        26
+      ],
       "upstream": {
         "about": "FilmCraft: An open-source, nonlinear video editor written by scratch in pure Rust",
         "latest": "0.13.0",

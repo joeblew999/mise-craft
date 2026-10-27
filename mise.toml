@@ -240,3 +240,18 @@ run = "mise run apps:install wordcraft"
 [tasks."wordcraft:uninstall"]
 description = "Uninstall WordCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall wordcraft"
+
+[tasks.log]
+description = "Run any task and keep its full output in logs/, one file per run (not committed): mise run log <task> [args...]"
+usage = 'arg "<task>" var=#true help="The task and its arguments, such as cadcraft:install"'
+run = """
+#!/usr/bin/env bash
+mkdir -p logs
+log="logs/$(date +%Y-%m-%dT%H-%M-%S)-$(echo "$usage_task" | tr ' :/' '---').log"
+echo "$(date '+%F %T') mise run $usage_task" >"$log"
+mise run $usage_task 2>&1 | tee -a "$log"
+status=${PIPESTATUS[0]}
+echo "$(date '+%F %T') exit $status" >>"$log"
+echo "log: $log"
+exit "$status"
+"""
