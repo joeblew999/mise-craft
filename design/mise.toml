@@ -1,32 +1,39 @@
-# Lineage: written by hand. The design-time pipeline. design/ holds what you edit (family.json and
-# apps.json) and the stages below; everything they produce lands at the repo root, where runtime
-# reads it. The pipeline never reads the state of the machine.
+# Lineage: written by hand. The design-time pipeline. design/ holds the registry (family.json,
+# apps.json) and the six stages that turn it into the files runtime reads. Everything the stages
+# produce lands at the repo root; the registry stays here.
 #
-#   stage        task       reads                        writes
-#   1 fetch      fetch      GitHub, apps.json            apps.json (the upstream blocks only)
-#   2 edit       (you)                                   family.json (what every app shares);
-#                                                        apps.json (everything else per app)
-#   3 validate   validate   family.json, apps.json       nothing: stops the pipeline if anything is wrong
-#   4 generate   generate   family.json, apps.json       ../mise.toml, ../servers.json
-#   5 lock       lock       ../mise.toml                 ../mise.lock
+#   stage         task          reads                       writes
+#   1 fetch       fetch         GitHub                      apps.json: every app's upstream block
+#   2 check       check <app>   the installed app           apps.json: that app's observed block
+#   3 record      (by hand)     what 1 and 2 found          family.json: what every app shares
+#                                                           apps.json: each app's version, port,
+#                                                           overrides, problems and notes
+#   4 validate    validate      family.json, apps.json      nothing: stops here if anything is wrong
+#   5 generate    generate      family.json, apps.json      ../mise.toml, ../servers.json
+#   6 lock        lock          ../mise.toml                ../mise.lock
 #
-# Each of stages 3-5 depends on the one before it, so running any of them runs the earlier ones
-# first, in order: `mise run lock` validates and generates before it locks. `gen` runs all three.
-# fetch stands apart: it reaches the network and brings in outside changes, so it only runs when
-# asked, and you review what it changed before running gen.
+# Stages 1 and 2 bring in facts from outside (GitHub, a running app), so they only run when asked,
+# and what they wrote is reviewed before stage 3. Stage 2 is the only stage that runs something on
+# the machine: it needs the app installed, and opens it to list its live tools. Stage 3 is done by
+# whoever maintains this repo. Stages 4 to 6 each depend on the one before, so `gen` (or any one of
+# them) always runs them in order. validate, generate and check all merge family and app with
+# full.jq.
 
 [tasks.fetch]
-description = "Stage 1: refresh each app's upstream block in apps.json from GitHub. Review the changes, then run gen."
+description = "Stage 1: refresh every app's upstream block in apps.json from GitHub."
 run = "./fetch"
 
+[tasks.check]
+description = "Stage 2: measure one installed app (usage line, bundle, headless and live tools, file confinement) into its observed block in apps.json."
+usage = 'arg "<app>" help="An installed app, such as cadcraft"'
+run = './check "$usage_app"'
+
 [tasks.validate]
-description = "Stage 3: stop before anything is written if family.json or apps.json is wrong: inexact versions, overrides of fields the family doesn't have, checked apps without a unique port or a usable bundle."
+description = "Stage 4: stop before anything is written if family.json or apps.json is wrong: inexact versions, overrides of fields the family doesn't have, checked apps without a unique port or a usable bundle."
 run = '''
-jq -e -n --slurpfile fam family.json --slurpfile apps apps.json '
+jq -e -n -L . --slurpfile fam family.json --slurpfile apps apps.json 'include "full";
   ($fam[0] | del(."//")) as $f | $apps[0].apps as $a
-  | def full($x): $f * ($x.overrides // {})
-    | walk(if type == "string" then gsub("\\{name\\}"; $x.name) else . end);
-  [ ($a[] | select(.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
+  | [ ($a[] | select(.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
       | "\(.id): version \(.version) is not exact"),
     ($a[] | . as $x | (.overrides // {}) | keys[] | select(. as $k | $f | has($k) | not)
       | "\($x.id): overrides \(.), which family.json does not have"),
@@ -35,23 +42,23 @@ jq -e -n --slurpfile fam family.json --slurpfile apps apps.json '
     ($a[] | select(.observed and (.port == null)) | "\(.id): checked but has no port"),
     ([$a[] | select(.port) | .port] | group_by(.) | map(select(length > 1) | .[0])[]
       | "port \(.) is used by more than one app"),
-    ($a[] | select(.observed) | . as $x | full($x)
+    ($a[] | select(.observed) | . as $x | full($fam[0])
       | select((.mcp.opens_itself | not) and .bundle.name != .bundle.executable + ".app")
       | "\($x.id): scripts/mcp-open-app.sh opens and finds the app by one name, so its bundle must be the executable plus .app")
   ] | if length == 0 then true else error(join("\n")) end' >/dev/null
 '''
 
 [tasks.generate]
-description = "Stage 4: family.json + apps.json -> the root's mise.toml and servers.json."
+description = "Stage 5: family.json + apps.json -> the root's mise.toml and servers.json."
 depends = ["validate"]
 run = "./generate"
 
 [tasks.lock]
-description = "Stage 5: lock exactly the downloads the new ../mise.toml names, in ../mise.lock."
+description = "Stage 6: lock exactly the downloads the new ../mise.toml names, in ../mise.lock."
 depends = ["generate"]
 dir = "{{config_root}}/.."
 run = "mise lock"
 
 [tasks.gen]
-description = "Stages 3-5, in order: validate, generate the root's files, lock."
+description = "Stages 4 to 6, in order: validate, generate, lock."
 depends = ["lock"]

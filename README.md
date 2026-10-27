@@ -56,22 +56,24 @@ time, and `claude mcp list` shows whether they connect.
 
 ## Design time
 
-[design/](design) holds what you edit, [design/family.json](design/family.json) and
-[design/apps.json](design/apps.json), and the pipeline that turns them into the files runtime reads.
-Everything the pipeline produces lands at the repo root; nothing it produces stays in `design/`, and
-it never reads the state of the machine. Its stages run in order, as
+[design/](design) holds the registry, [design/family.json](design/family.json) and
+[design/apps.json](design/apps.json), and the six stages that turn it into the files runtime reads.
+Everything the stages produce lands at the repo root. They run in this order, as
 [design/mise.toml](design/mise.toml) lists them:
 
 ```sh
-mise -C design run fetch   # 1. GitHub → the upstream blocks in design/apps.json; review the changes
-                           # 2. edit design/family.json or design/apps.json
-mise -C design run gen     # 3-5. validate them, generate mise.toml and servers.json, lock
+mise -C design run fetch           # 1. GitHub → every app's upstream block in apps.json
+mise -C design run check cadcraft  # 2. an installed app → its observed block in apps.json
+                                   # 3. record: the maintainer edits family.json and apps.json
+mise -C design run gen             # 4-6. validate, generate mise.toml and servers.json, lock
 ```
 
-Stages 3 to 5 are tasks of their own, and each depends on the one before it, so running any of them
-runs the earlier ones first: nothing can be locked before it is generated. Runtime tasks read what
-the pipeline produced and never change it: installs run with `--locked`, so they never write
-`mise.lock`.
+Stages 1 and 2 bring in facts from outside, so they run only when asked, and what they wrote is
+reviewed before stage 3. Stage 2 is the only one that runs anything on the machine: it needs the app
+installed, and opens it to list its live tools. Stages 4 to 6 are tasks of their own, and each
+depends on the one before it, so running any of them runs the earlier ones first: nothing can be
+locked before it is generated. Runtime tasks read what the stages produced and never change it:
+installs run with `--locked`, so they never write `mise.lock`.
 
 ## The apps
 
@@ -86,8 +88,9 @@ What this repo knows about the Craft apps is in two files:
   differs from the family, so every uncommon thing about an app is listed there), `problems`
   (numbers into [docs/problems.md](docs/problems.md)) and `notes`. Written by `fetch`: `upstream`,
   its description, latest release, published platforms, MCP docs and the port its own docs use.
-  `observed`: the evidence of checking it end to end, such as its usage line, bundle, what a fresh
-  app holds, tools only its live server has, and whether file access can be confined. The file's
+  Written by `check`: `observed`, the evidence of checking it end to end, such as its usage line,
+  bundle, tools only its live server has, and whether file access can be confined (what a fresh app
+  holds is recorded by hand). The file's
   `"//"` lines explain each field.
 
 An app's full description is the family with its `overrides` laid over it. Each app's CLI,
@@ -152,14 +155,16 @@ Files the apps write themselves, such as documents, preferences and control toke
 What runs or reads what. Each file's header states its own lineage in full.
 
 ```
-design/                      design time: what you edit, and the pipeline (mise -C design run <task>)
-  mise.toml                  the pipeline: each stage, what it reads and writes, in order; it runs
-                             validate (stage 3) and lock (stage 5) itself
-  family.json                what every Craft app shares, written by hand: read by validate, generate
-  apps.json                  each app, written by hand except upstream (fetch): read by validate,
-                             generate and status
-  fetch                      stage 1: GitHub (through gh) → each app's upstream block in apps.json
-  generate                   stage 4: family.json + apps.json → ../mise.toml, ../servers.json
+design/                      design time: the registry, and the six stages (mise -C design run <task>)
+  mise.toml                  the stages: what each reads and writes, in order; it runs validate
+                             (stage 4) and lock (stage 6) itself
+  family.json                what every Craft app shares, written by hand (stage 3)
+  apps.json                  each app: by hand (stage 3), except upstream (stage 1, fetch) and
+                             observed (stage 2, check); read by validate, generate, check, status
+  full.jq                    the family + app merge, shared by validate, generate and check
+  fetch                      stage 1: GitHub (through gh) → every app's upstream block in apps.json
+  check                      stage 2: an installed app → its observed block in apps.json
+  generate                   stage 5: family.json + apps.json → ../mise.toml, ../servers.json
 mise-tasks/                  runtime, run by you: mise run <task>
   status                     reads design/apps.json, mise, .mcp.json, ~/.claude.json, Claude Desktop's config
   apps/install, uninstall    → mise install --locked / mise uninstall → scripts/unpack-dmg.sh
@@ -176,7 +181,7 @@ servers.json                 generated by design/generate: read by claude/sync a
 .mcp.json                    runtime, not committed: written by claude/sync; read by Claude Code,
                              VS Code, desktop/install and status
 .gitignore                   keeps .mcp.json out of git
-docs/                        problems.md, and the design time vs runtime notes
+docs/problems.md             every problem found, and what it needs
 CLAUDE.md                    read by Claude Code; imports this README
 ```
 
@@ -198,8 +203,7 @@ CLAUDE.md                    read by Claude Code; imports this README
 ## Plan
 
 1. Load the servers in Claude Desktop itself, and wire up watching there.
-2. A `check` stage that writes each app's `observed` block by running it, then the remaining apps
-   checked with it.
+2. Check the remaining apps (stage 2 is built: `mise -C design run check <app>`).
 3. Confine the headless servers' file access (problem 13), once the folders are chosen.
 4. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
    like everything else. They need the servers reachable over HTTPS: a bridge, a tunnel and
@@ -212,9 +216,8 @@ These rules are for people and agents alike; Claude Code reads this README throu
 [CLAUDE.md](CLAUDE.md).
 
 - **This README documents the repo**, and each fact is stated once. CLAUDE.md only imports it.
-  The only other Markdown is in `docs/`: [docs/problems.md](docs/problems.md) tracks every problem
-  found, and [docs/design-time-vs-runtime.md](docs/design-time-vs-runtime.md) holds the open design
-  work. Never make memory files: agents keep no notes about this repo anywhere else, such as Claude
+  The only other Markdown is [docs/problems.md](docs/problems.md), which tracks every problem
+  found. Never make memory files: agents keep no notes about this repo anywhere else, such as Claude
   Code's memory folder.
 - **This repo controls everything it puts on the machine.** Anything created outside the repo
   folder is created by mise or a mise task, and has a matching task that removes it. Add the undo
@@ -243,20 +246,21 @@ These rules are for people and agents alike; Claude Code reads this README throu
   server's command, where stdin and stdout carry MCP messages that `mise run` disturbs: run as a
   task with `depends`, a live server lost the client's first messages. Neither is run by hand.
 - **Record every unusual thing the moment you find it.** About one app: in its `overrides` if it
-  differs from the family, in `observed` if checking it showed it, otherwise in `notes`. A problem
+  differs from the family, otherwise in `notes` (`check` writes what it can measure into
+  `observed`). A problem
   goes in [docs/problems.md](docs/problems.md), and the app lists its number in `problems`. About
   everything: in this README. Never leave it in a test log or a commit message only.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml` and
   `servers.json` (`design/generate`), `mise.lock` (`mise lock`), `.mcp.json` (`claude:sync`, at
-  runtime), and the `upstream` blocks in `design/apps.json` (`design/fetch`); everything else is
-  written by hand. JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the
+  runtime), and in `design/apps.json` the `upstream` blocks (`design/fetch`) and most of `observed`
+  (`design/check`); everything else is written by hand. JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the
   header mise writes.
 - **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out,
   never guessed: an app's `port` and `observed` once it's checked end to end.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
-  first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;
-  then record its `port`, `overrides`, `observed` and `problems` in `design/apps.json`, and run
-  `mise -C design run gen`.
+  first. For an app, that's install, `mise -C design run check <app>`, and a tool call that shows
+  up in the app; then record its `port`, `overrides`, `problems` and what a fresh app holds in
+  `design/apps.json`, and run `mise -C design run gen`.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
   that would download gigabytes.

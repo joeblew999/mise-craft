@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Design-time stage 2, check: measure one installed app and record what it showed in its observed
+# block in apps.json. It's the one stage that runs something on the machine: the app's CLI, its
+# headless MCP server, and its live server (which opens the desktop app; check closes it again if it
+# wasn't open before). Review what it changed, then run gen.
+#
+# Lineage:
+#   run by   `mise run check <app>` in design/ (design/mise.toml)
+#   reads    design/family.json, design/apps.json, design/full.jq; the app's installed CLI and bundle
+#   writes   these fields of the app's observed block in design/apps.json, and nothing else:
+#            version, on, usage, bundle, live_only_tools, look, file_roots. opens_with and
+#            control_token stay as recorded by hand.
+set -euo pipefail
+cd "$(dirname "$0")"
+id=${1:?usage: check <app>}
+app=$(jq -c --arg id "$id" --slurpfile fam family.json -L . 'include "full"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
+[ -n "$app" ] || { echo "$id is not in apps.json" >&2; exit 1; }
+cli=$(jq -r '.install.cli_bin' <<<"$app")
+port=$(jq -r '.port // empty' <<<"$app")
+mise which "$cli" >/dev/null 2>&1 || { echo "$id is not installed: run mise run $id:install at the repo root first" >&2; exit 1; }
+
+# usage: the CLI's own mcp usage line, the longest one its help shows (some list options only under
+# `mcp --help`), with any continuation lines that start with "[".
+usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" mcp --help 2>&1 || true; mise exec -- "$cli" mcp --no-such-option 2>&1 || true; } \
+  | awk -v cli="$cli" '
+      function flush() { if (cur != "") { if (length(cur) > length(best)) best = cur; cur = "" } }
+      /^[[:space:]]*\[/ && cur != "" { sub(/^[[:space:]]+/, ""); cur = cur " " $0; next }
+      { flush() }
+      { line = $0; sub(/^[[:space:]]*(usage:[[:space:]]*)?/, "", line) }
+      line ~ ("^(" cli " )?mcp \\[") {
+        sub(/[[:space:]][[:space:]]+.*$/, "", line)
+        if (line !~ ("^" cli " ")) line = cli " " line
+        cur = line
+      }
+      END { flush(); print best }')
+[ -n "$usage" ] || { echo "could not find $cli's mcp usage line" >&2; exit 1; }
+
+# bundle: from the installed app itself.
+dir=$(mise where "$id")
+bundle_name=$(cd "$dir" && ls -d *.app | head -1)
+executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$dir/$bundle_name/Contents/Info.plist")
+
+# The tool names an MCP server lists, given its command.
+tools() {
+  { printf '%s\n' \
+      '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"check","version":"0"}}}' \
+      '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+      '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+    sleep 10; } \
+    | (cd .. && perl -e 'alarm 60; exec @ARGV' "$@" 2>/dev/null) \
+    | jq -c 'select(.id == 2) | [.result.tools[].name] | sort'
+}
+headless=$(tools mise exec -- "$cli" mcp $(jq -r '.mcp.headless[]' <<<"$app"))
+[ -n "$headless" ] || { echo "$id's headless server didn't answer" >&2; exit 1; }
+
+live='null'
+if [ -n "$port" ]; then
+  was_open=$(pgrep -x "$executable" >/dev/null && echo yes || echo no)
+  if [ "$(jq -r '.mcp.opens_itself' <<<"$app")" = true ]; then
+    live=$(tools mise exec -- "$cli" mcp $(jq -r '.mcp.live[]' <<<"$app"))
+  else
+    live=$(tools mise exec -- sh scripts/mcp-open-app.sh "${bundle_name%.app}" "$port" "$cli" mcp $(jq -r '.mcp.live[]' <<<"$app"))
+  fi
+  [ -n "$live" ] || { echo "$id's live server didn't answer on port $port" >&2; exit 1; }
+  if [ "$was_open" = no ]; then pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true; fi
+else
+  echo "$id has no port in apps.json yet, so its live server isn't checked" >&2
+fi
+
+measured=$(jq -n --arg version "$(jq -r .version <<<"$app")" --arg on "$(date +%F)" --arg usage "$usage" \
+  --arg name "$bundle_name" --arg exe "$executable" --argjson headless "$headless" --argjson live "$live" '{
+    version: $version, on: $on, usage: $usage,
+    live_only_tools: (if $live == null then null else ($live - $headless) end),
+    look: ([($headless + ($live // []))[] | select(test("screenshot|render|export_png"))] | unique),
+    file_roots: ($usage | test("--automation-read-root")),
+    bundle: {name: $name, executable: $exe}
+  } | with_entries(select(.value != null))')
+
+# Write through a temporary file, keeping observed before upstream and every other field as it was.
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+before=$(jq -c --arg id "$id" '.apps[] | select(.id == $id) | .observed // {}' apps.json)
+jq --arg id "$id" --argjson m "$measured" '.apps |= map(if .id != $id then . else
+    (. as $a | ($a | del(.observed, .upstream)) + {observed: (($a.observed // {}) + $m)} + {upstream: $a.upstream})
+  end)' apps.json >"$tmp"
+cat "$tmp" >apps.json
+after=$(jq -c --arg id "$id" '.apps[] | select(.id == $id) | .observed' apps.json)
+jq -n -r --argjson b "$before" --argjson a "$after" '
+  [($a | keys[]) as $k | select($b[$k] != $a[$k]) | "  \($k): \($b[$k] | tojson) -> \($a[$k] | tojson)"]
+  | if length == 0 then "observed unchanged" else "observed changed:\n" + join("\n") end'

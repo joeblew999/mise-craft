@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Design-time stage 4: generate the root's mise.toml and servers.json from family.json and apps.json.
-# Validation (stage 3) runs before it and locking (stage 5) after it, both from design/mise.toml.
+# Design-time stage 5: generate the root's mise.toml and servers.json from family.json and apps.json.
+# Validation (stage 4) runs before it and locking (stage 6) after it, both from design/mise.toml.
 #
 # Lineage:
 #   run by   the generate task in design/mise.toml (`mise run gen` in design/ runs it, after validate)
