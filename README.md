@@ -186,3 +186,28 @@ and sets the apps up for agents.
 - **Exact versions only.** mise's `minimum_release_age` hides releases newer than a set age, so
   `latest` can lag behind the newest release.
 - Only PdfCraft publishes a CLI for Linux, and no app publishes one for Windows.
+
+## Working on this repo
+
+These rules are for people and agents alike; Claude Code reads this README through
+[CLAUDE.md](CLAUDE.md).
+
+- **This repo controls everything it puts on the machine.** Anything created outside the repo
+  folder is created by mise or a mise task, and has a matching task that removes it. Add the undo
+  task in the same change as the do task, and add a row to
+  [What this repo puts on your machine](#what-this-repo-puts-on-your-machine).
+- **Undo restores the previous state exactly** and touches only what this repo added. A task that
+  edits a shared file, such as Claude Desktop's config, finds its own entries by a marker and leaves
+  everything else byte-for-byte as it was.
+- **Exact versions, idempotent installs.** Never `latest`; keep `mise.lock` current. An installed
+  version is never downloaded again.
+- **Nothing downloads unless it's named**, and no desktop app opens unless asked for: auto-install
+  stays off, and live servers stay out of `.mcp.json` until `<app>:watch`.
+- **mise only.** No Homebrew, no ArtCraft Launcher, no manual DMG installs. macOS built-ins called
+  from mise tasks and hooks (`hdiutil`, `lsregister`, `open`) are fine.
+- **`mise.toml` is generated** by `scripts/gen-mise-toml.sh`: change the script, then regenerate.
+  Tasks live in `mise-tasks/`.
+- **Check each app end to end before adding it.** Each app's MCP server takes different options;
+  its headless server goes in `.mcp.json` and its live server in `mcp-live.json`.
+- **This README is the only documentation.** CLAUDE.md only imports it; don't add other Markdown
+  files.
