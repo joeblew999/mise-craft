@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-#MISE description="Install Craft apps by name, each with its CLI: `mise run apps:install cadcraft vectorcraft`. Undo with apps:uninstall."
+#MISE description="Install Craft apps by name, each with its CLI, then add their headless servers to Claude Code: `mise run apps:install cadcraft vectorcraft`. Undo with apps:uninstall."
 #USAGE arg "<app>" var=#true help="An app from mise.toml, such as cadcraft"
 # Lineage:
 #   run by   `mise run <app>:install` (mise.toml), or directly
-#   runs     `mise install <app> <app>-cli`; mise then runs scripts/unpack-dmg.sh as the
-#            desktop app's postinstall
+#   runs     `mise install --locked <app> <app>-cli`, which installs exactly what mise.lock names
+#            and never writes mise.lock; mise then runs scripts/unpack-dmg.sh as the desktop app's
+#            postinstall. Then mise-tasks/claude/sync, which rewrites .mcp.json.
 #   undone   mise-tasks/apps/uninstall
 set -euo pipefail
 for app in $usage_app; do
-  mise install "$app" "$app-cli"
+  mise install --locked "$app" "$app-cli"
 done
+mise run claude:sync

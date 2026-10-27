@@ -35,57 +35,63 @@ mise config (mise ignores it in a project file).
 | Task | Does | Undone by |
 |---|---|---|
 | `status` | Shows each app's pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
-| `<app>:install` | Installs the app's CLI and desktop app | `<app>:uninstall` |
-| `<app>:uninstall` | Removes every installed version of both and unregisters the app from macOS | `<app>:install` |
+| `<app>:install` | Installs the app's CLI and desktop app, then `claude:sync` | `<app>:uninstall` |
+| `<app>:uninstall` | Unwatches the app, removes every installed version of both, unregisters the app from macOS, then `claude:sync` | `<app>:install` |
 | `<app>:watch` | Adds the app's live MCP server to Claude Code, for this project | `<app>:unwatch` |
 | `<app>:unwatch` | Removes it | `<app>:watch` |
 | `apps:install`, `apps:uninstall`, `apps:watch`, `apps:unwatch` `<app>...` | The same for several apps at once | each other |
-| `desktop:install` | Adds the headless MCP servers to Claude Desktop | `desktop:uninstall` |
+| `claude:sync` | Writes `.mcp.json` with the headless server of each checked app installed here | (rerun after any change) |
+| `desktop:install` | Makes Claude Desktop's servers from this repo match `.mcp.json` | `desktop:uninstall` |
 | `desktop:uninstall` | Removes exactly those servers | `desktop:install` |
 
-**MCP servers in Claude Code.** [.mcp.json](.mcp.json) has a headless server for each checked app:
-it works on a document with no window, so no app opens. To watch Claude work in a desktop app,
-`<app>:watch` adds that app's live server from [mcp-live.json](mcp-live.json) in Claude Code's
-local scope, so it's yours only; it loads in the next session or through `/mcp`. Claude Code asks
-you to approve the project's servers the first time, and `claude mcp list` shows whether they
-connect.
+**MCP servers in Claude Code.** `.mcp.json` holds a headless server for each checked app installed
+on this machine: it works on a document with no window, so no app opens. It's a runtime file, not
+committed, written by `claude:sync` whenever you install or uninstall an app, so it never lists an
+app you don't have. To watch Claude work in a desktop app, `<app>:watch` adds that app's live server
+from [servers.json](servers.json) in Claude Code's local scope, so it's yours only; it loads in the
+next session or through `/mcp`. Claude Code asks you to approve the project's servers the first
+time, and `claude mcp list` shows whether they connect.
 
 **Claude Desktop.** Quit it, run `mise run desktop:install`, then reopen it.
 
 ## Design time
 
-[design/](design) holds what you edit, [design/apps.json](design/apps.json), and the pipeline that
-turns it into the files runtime reads. Everything the pipeline produces lands at the repo root;
-nothing it produces stays in `design/`, and it never reads the state of the machine. Its stages run
-in order, as [design/mise.toml](design/mise.toml) lists them:
+[design/](design) holds what you edit, [design/family.json](design/family.json) and
+[design/apps.json](design/apps.json), and the pipeline that turns them into the files runtime reads.
+Everything the pipeline produces lands at the repo root; nothing it produces stays in `design/`, and
+it never reads the state of the machine. Its stages run in order, as
+[design/mise.toml](design/mise.toml) lists them:
 
 ```sh
 mise -C design run fetch   # 1. GitHub → the upstream blocks in design/apps.json; review the changes
-                           # 2. edit design/apps.json
-mise -C design run gen     # 3-5. validate it, generate mise.toml, .mcp.json and mcp-live.json, lock
+                           # 2. edit design/family.json or design/apps.json
+mise -C design run gen     # 3-5. validate them, generate mise.toml and servers.json, lock
 ```
 
 Stages 3 to 5 are tasks of their own, and each depends on the one before it, so running any of them
 runs the earlier ones first: nothing can be locked before it is generated. Runtime tasks read what
-the pipeline produced and never change it, with one exception still open (problem 25 in
-[docs/problems.md](docs/problems.md)).
+the pipeline produced and never change it: installs run with `--locked`, so they never write
+`mise.lock`.
 
 ## The apps
 
-[design/apps.json](design/apps.json) is the registry: everything this repo knows about each app. `mise run status`
-shows the main points, along with what's installed and running. For each app:
+What this repo knows about the Craft apps is in two files:
 
-- **Written by hand:** its id, name, GitHub repo, the version pinned here, and the release downloads
-  to install. Once the app is checked end to end, also its app bundle and process name; its control
-  port, how its MCP servers start and everything unusual about them, such as what a fresh app
-  holds, tools only the live server has and whether file access can be confined (`mcp`; the file's
-  `"//"` line explains each field); which version was checked and when (`checked`); and what goes
-  wrong with it (`limits`) or is worth knowing (`notes`).
-- **Fetched from GitHub** by the pipeline's `fetch`, in its `upstream` block: its description, latest
-  release, the platforms its CLI and desktop app are published for, its MCP docs, and the port its
-  own docs use.
+- **[design/family.json](design/family.json): what every Craft app shares,** defined once with
+  `{id}`, `{name}` and `{port}` placeholders: the repo and download naming, the CLI's name, the
+  bundle and process name, how the headless server starts and the usual way the live server
+  connects.
+- **[design/apps.json](design/apps.json): each app, and only what is its own.** Written by hand:
+  its id, name, the exact version pinned, its control port once checked, `overrides` (only where it
+  differs from the family, so every uncommon thing about an app is listed there), `problems`
+  (numbers into [docs/problems.md](docs/problems.md)) and `notes`. Written by `fetch`: `upstream`,
+  its description, latest release, published platforms, MCP docs and the port its own docs use.
+  `observed`: the evidence of checking it end to end, such as its usage line, bundle, what a fresh
+  app holds, tools only its live server has, and whether file access can be confined. The file's
+  `"//"` lines explain each field.
 
-Each app's CLI, `<app>-cli`, runs a headless MCP server with `<app>-cli mcp`. The
+An app's full description is the family with its `overrides` laid over it. Each app's CLI,
+`<app>-cli`, runs a headless MCP server with `<app>-cli mcp`. The
 [ArtCraft Launcher](https://github.com/storytold/craft-launcher) isn't used here: it installs the
 desktop apps into `/Applications` from a GUI.
 
@@ -106,12 +112,13 @@ Files the apps write themselves, such as documents, preferences and control toke
 - **Two tools per app.** [mise.toml](mise.toml) installs each app's GitHub repo twice under
   [tool aliases](https://mise.jdx.dev/dev-tools/backends/github.html): `<app>-cli` from the CLI
   zip and `<app>` from the desktop app's DMG. It's generated, tasks included, by
-  [design/generate](design/generate) from [design/apps.json](design/apps.json), as are `.mcp.json` and
-  `mcp-live.json`.
+  [design/generate](design/generate) from `design/family.json` and `design/apps.json`, as is
+  `servers.json`, the headless and live servers of every checked app for any host to use.
 - **Exact versions.** mise's `minimum_release_age` hides releases newer than a set age, so `latest`
   can lag behind the newest release. [mise.lock](mise.lock) pins each download's SHA-256, matching
   the release's `SHA256SUMS.txt`. Each version installs to its own folder, so installing again
-  downloads nothing.
+  downloads nothing, and installs run with `--locked`, so they install exactly what `mise.lock`
+  names and never rewrite it.
 - **Nothing installs by itself.** mise's auto-install is off in this repo, so `mise exec`,
   `mise run` and a missing command never download anything. A bare `mise install` would install
   every app, about 3 GB.
@@ -120,25 +127,25 @@ Files the apps write themselves, such as documents, preferences and control toke
   out of the image and registers it with macOS so `open -a <App>` finds it. The apps stay in mise's
   install folders, not `/Applications`, and are signed and notarized by their publisher.
 - **Control ports.** Each desktop app takes `--control PORT`. Several apps' own docs use 7979
-  (`upstream.docs_port`), so `design/apps.json` gives each checked app its own. The port is written
-  down, not worked out from the app's place in the list, so a newly published app never moves
-  another app's port.
-- **Opening the app for a live server.** An app whose server can open it (`"opens_itself"` in
-  `design/apps.json`, CADCraft's `--launch`) opens at the first tool call. For the others,
+  (`upstream.docs_port`), so `design/apps.json` gives each checked app its own `port`. The port is
+  written down, not worked out from the app's place in the list, so a newly published app never
+  moves another app's port.
+- **Opening the app for a live server.** An app whose server can open it (`opens_itself` in its
+  `overrides`, CADCraft's `--launch`) opens at the first tool call. For the others,
   [scripts/mcp-open-app.sh](scripts/mcp-open-app.sh) opens the app with its control port and then
   starts the server, so the app opens as soon as its live server starts.
-- **Watching.** Live servers are switched on per app instead of living in `.mcp.json` because
-  Claude Code starts every server it knows, at session start and on `claude mcp list`, and starting
-  most live servers opens the app. Turning them off in settings doesn't work either: Claude Code
-  merges `disabledMcpjsonServers` across its settings files, so a server switched off for everyone
-  can't be switched back on for one person. `<app>:watch` adds the live server with a
-  `MISE_CRAFT_WATCH` environment variable as its marker, and `<app>:unwatch` removes only servers
-  that carry it, so a server of the same name that you added yourself is never replaced or removed.
+- **Watching.** Live servers stay out of `.mcp.json` because Claude Code starts every server it
+  knows, at session start and on `claude mcp list`, and starting most live servers opens the app.
+  Turning them off in settings doesn't work either: Claude Code merges `disabledMcpjsonServers`
+  across its settings files, so a server switched off for everyone can't be switched back on for
+  one person. `<app>:watch` adds the live server with a `MISE_CRAFT_WATCH` environment variable as
+  its marker, and `<app>:unwatch` removes only servers that carry it, so a server of the same name
+  that you added yourself is never replaced or removed.
 - **Claude Desktop** starts servers outside this repo with a minimal `PATH`, so `desktop:install`
   rewrites each `.mcp.json` entry to call mise by its full path with `-C <this repo>`. That marker
-  is how `desktop:uninstall` finds its own entries, leaving the rest of the file byte-for-byte as
-  it was. Claude Desktop rewrites that file while it runs, so both tasks refuse to run while it's
-  open.
+  is how it replaces, and `desktop:uninstall` removes, only its own entries, leaving the rest of the
+  file byte-for-byte as it was. Claude Desktop rewrites that file while it runs, so both tasks
+  refuse to run while it's open.
 
 ## Files
 
@@ -148,22 +155,27 @@ What runs or reads what. Each file's header states its own lineage in full.
 design/                      design time: what you edit, and the pipeline (mise -C design run <task>)
   mise.toml                  the pipeline: each stage, what it reads and writes, in order; it runs
                              validate (stage 3) and lock (stage 5) itself
-  apps.json                  the registry, written by hand except the upstream blocks (fetch):
-                             read by validate, generate and status
+  family.json                what every Craft app shares, written by hand: read by validate, generate
+  apps.json                  each app, written by hand except upstream (fetch): read by validate,
+                             generate and status
   fetch                      stage 1: GitHub (through gh) → each app's upstream block in apps.json
-  generate                   stage 4: apps.json → ../mise.toml, ../.mcp.json, ../mcp-live.json
+  generate                   stage 4: family.json + apps.json → ../mise.toml, ../servers.json
 mise-tasks/                  runtime, run by you: mise run <task>
   status                     reads design/apps.json, mise, .mcp.json, ~/.claude.json, Claude Desktop's config
-  apps/install, uninstall    → mise install / mise uninstall → scripts/unpack-dmg.sh (postinstall)
-  apps/watch, unwatch        mcp-live.json → claude mcp add-json / remove → ~/.claude.json
+  apps/install, uninstall    → mise install --locked / mise uninstall → scripts/unpack-dmg.sh
+                             (postinstall); then claude/sync
+  apps/watch, unwatch        servers.json → claude mcp add-json / remove → ~/.claude.json
+  claude/sync                servers.json + what's installed → .mcp.json
   desktop/install, uninstall .mcp.json → Claude Desktop's config
 scripts/                     runtime, run by mise and Claude Code, never by hand
   unpack-dmg.sh              run by mise as each desktop app's postinstall
   mcp-open-app.sh            run by Claude Code as part of a live server's command
 mise.toml                    generated by design/generate; its <app>:* tasks run mise-tasks/apps/*
 mise.lock                    generated by mise lock, in the pipeline's lock stage
-.mcp.json                    headless servers, generated by design/generate: read by Claude Code, desktop/install, status
-mcp-live.json                live servers, generated by design/generate: read by apps/watch
+servers.json                 generated by design/generate: read by claude/sync and apps/watch
+.mcp.json                    runtime, not committed: written by claude/sync; read by Claude Code,
+                             VS Code, desktop/install and status
+.gitignore                   keeps .mcp.json out of git
 docs/                        problems.md, and the design time vs runtime notes
 CLAUDE.md                    read by Claude Code; imports this README
 ```
@@ -171,29 +183,28 @@ CLAUDE.md                    read by Claude Code; imports this README
 ## Known limits
 
 - **Claude Desktop** is tested on a copy of its config (the servers start the way Claude Desktop
-  starts them, and uninstall restores the file exactly) but not yet in Claude Desktop itself, and
-  it gets only the headless servers.
+  starts them, and its tasks restore the file exactly) but not yet in Claude Desktop itself, and it
+  gets only the headless servers.
 - **The headless MCP servers can read and write any file you can.** This repo passes no
-  `--automation-read-root` / `--automation-write-root`; an app's `mcp.file_roots` in `design/apps.json` says
-  whether its CLI could confine it. A live server is confined only by the app it drives.
-- **A checked app that isn't installed shows as a failed server in Claude Code.** `.mcp.json` lists
-  the headless server of every checked app, and with auto-install off mise won't fetch a missing one,
-  so `claude mcp list` shows "Failed to connect" for it. Install the app with `mise run <app>:install`,
-  or ignore it.
-- **Each app's own problems** are in its `limits` in [design/apps.json](design/apps.json).
-- **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile, so
-  name the tools: `mise install --locked cadcraft cadcraft-cli`.
+  `--automation-read-root` / `--automation-write-root`; an app's `observed.file_roots` says whether
+  its CLI could confine it. A live server is confined only by the app it drives. (Problem 13.)
+- **Each app's own problems** are listed by number in its `problems` in
+  [design/apps.json](design/apps.json), and described in [docs/problems.md](docs/problems.md).
+- **`mise install --locked`** with no tool names also checks your global mise tools, which aren't
+  in this lockfile, so name the tools: `mise install --locked cadcraft cadcraft-cli`.
 - **Platforms.** This repo installs the macOS builds only. Which platforms each app's CLI and
   desktop app are published for is in its `upstream` block in `design/apps.json`.
 
 ## Plan
 
 1. Load the servers in Claude Desktop itself, and wire up watching there.
-2. Check the other apps, one at a time.
-3. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
+2. A `check` stage that writes each app's `observed` block by running it, then the remaining apps
+   checked with it.
+3. Confine the headless servers' file access (problem 13), once the folders are chosen.
+4. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
    like everything else. They need the servers reachable over HTTPS: a bridge, a tunnel and
    authentication.
-4. Linux and Windows, as the apps publish CLIs for them.
+5. Linux and Windows, as the apps publish CLIs for them.
 
 ## Working on this repo
 
@@ -219,27 +230,33 @@ These rules are for people and agents alike; Claude Code reads this README throu
   and the pipeline's steps. Everything the pipeline produces lands at the repo root, where runtime
   reads it. Design time never reads the state of the machine, and runtime never edits what design
   time produced.
-- **Change `design/apps.json`, never the files generated from it** (`mise.toml`, `mise.lock`,
-  `.mcp.json`, `mcp-live.json`), then run `mise -C design run gen`. The pipeline is defined in
-  `design/mise.toml`, which it never writes, so regenerating never rewrites its own definition.
+- **What every app shares goes in `design/family.json`, once; what is one app's own goes in
+  `design/apps.json`.** Where an app differs from the family, the difference goes in its
+  `overrides`, so every uncommon thing is in one visible place. Change those two files, never the
+  files generated from them (`mise.toml`, `mise.lock`, `servers.json`), then run
+  `mise -C design run gen`. The pipeline is defined in `design/mise.toml`, which it never writes, so
+  regenerating never rewrites its own definition.
+- **`.mcp.json` is a runtime file.** Only `claude:sync` writes it, from `servers.json` and what's
+  installed; it's never committed.
 - **`mise-tasks/` holds what you run; `scripts/` holds what mise and Claude Code run.**
   `scripts/unpack-dmg.sh` is mise's postinstall hook, and `scripts/mcp-open-app.sh` sits in a live
   server's command, where stdin and stdout carry MCP messages that `mise run` disturbs: run as a
   task with `depends`, a live server lost the client's first messages. Neither is run by hand.
-- **Record every unusual thing the moment you find it**: about one app in `design/apps.json` (a structured
-  `mcp` field if one fits, otherwise `limits` or `notes`), about everything in this README. Never
-  leave it in a test log or a commit message only.
+- **Record every unusual thing the moment you find it.** About one app: in its `overrides` if it
+  differs from the family, in `observed` if checking it showed it, otherwise in `notes`. A problem
+  goes in [docs/problems.md](docs/problems.md), and the app lists its number in `problems`. About
+  everything: in this README. Never leave it in a test log or a commit message only.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
-  writes, and what undoes it. Generated files also say what generates them: `mise.toml`,
-  `.mcp.json` and `mcp-live.json` (`design/generate`), `mise.lock` (`mise lock`), and the `upstream`
-  blocks in `design/apps.json` (`design/fetch`); everything else is written by hand. JSON files,
-  which can't hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
-- **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out, never
-  guessed: an app's bundle and process name are recorded once it's installed, and its `mcp` and
-  `checked` entries once it's checked end to end.
+  writes, and what undoes it. Generated files also say what generates them: `mise.toml` and
+  `servers.json` (`design/generate`), `mise.lock` (`mise lock`), `.mcp.json` (`claude:sync`, at
+  runtime), and the `upstream` blocks in `design/apps.json` (`design/fetch`); everything else is
+  written by hand. JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the
+  header mise writes.
+- **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out,
+  never guessed: an app's `port` and `observed` once it's checked end to end.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;
-  then record its `bundle`, `mcp` and `checked` entries in `design/apps.json`, and run
+  then record its `port`, `overrides`, `observed` and `problems` in `design/apps.json`, and run
   `mise -C design run gen`.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
   that would download gigabytes.

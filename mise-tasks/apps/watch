@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-#MISE description="Add apps' live MCP servers (from mcp-live.json) to Claude Code for this project only, so Claude drives the desktop app while you watch: `mise run apps:watch cadcraft`. Undo with apps:unwatch."
-#USAGE arg "<app>" var=#true help="An app with a live server in mcp-live.json, such as cadcraft"
+#MISE description="Add installed apps' live MCP servers (from servers.json) to Claude Code for this project only, so Claude drives the desktop app while you watch: `mise run apps:watch cadcraft`. Undo with apps:unwatch."
+#USAGE arg "<app>" var=#true help="A checked, installed app, such as cadcraft"
 # Lineage:
 #   run by   `mise run <app>:watch` (mise.toml), or directly
-#   reads    mcp-live.json, ~/.claude.json
+#   reads    servers.json, ~/.claude.json; `mise which` (refuses an app that is not installed)
 #   runs     `claude mcp add-json --scope local`, which writes this project's entry in
 #            ~/.claude.json; Claude Code then starts the server, via scripts/mcp-open-app.sh
 #            for apps that can't open themselves
@@ -17,8 +17,9 @@ marker=MISE_CRAFT_WATCH
 for app in $usage_app; do
   name="$app-app"
   server=$(jq -c --arg n "$name" --arg m "$marker" \
-    '.mcpServers[$n] // empty | .env = ((.env // {}) + {($m): "1"})' mcp-live.json)
-  [ -n "$server" ] || { echo "$app has no live server in mcp-live.json yet" >&2; exit 1; }
+    '.live[$n] // empty | .env = ((.env // {}) + {($m): "1"})' servers.json)
+  [ -n "$server" ] || { echo "$app has no live server in servers.json: it is not checked yet" >&2; exit 1; }
+  mise which "$app-cli" >/dev/null 2>&1 || { echo "$app is not installed: run mise run $app:install first" >&2; exit 1; }
   existing=$(jq -c --arg root "$root" --arg n "$name" \
     '.projects[$root].mcpServers[$n] // empty' "$HOME/.claude.json" 2>/dev/null || true)
   if [ -n "$existing" ]; then
@@ -26,7 +27,7 @@ for app in $usage_app; do
       echo "Claude Code already has a server named $name that this repo didn't add; leaving it alone." >&2
       exit 1
     fi
-    # Ours: replace it, so it matches the current mcp-live.json.
+    # Ours: replace it, so it matches the current servers.json.
     claude mcp remove --scope local "$name" >/dev/null
   fi
   claude mcp add-json --scope local "$name" "$server"

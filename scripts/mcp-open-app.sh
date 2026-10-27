@@ -5,7 +5,7 @@
 # stdin and stdout carry the MCP client's messages, so nothing before the exec may touch them.
 #
 # Lineage:
-#   run by   Claude Code, starting a live server that <app>:watch added (defined in mcp-live.json)
+#   run by   Claude Code, starting a live server that <app>:watch added (defined in servers.json)
 #   runs     `open -a <App> --args --control <port>`, then the MCP server command
 set -e
 app=$1 port=$2

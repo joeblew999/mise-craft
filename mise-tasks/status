@@ -25,8 +25,8 @@ for app in $apps; do
   version=$(jq -r --arg t "$app" '.[$t][0].requested_version' <<<"$tools")
   entry=$(jq -c --arg id "$app" '.apps[] | select(.id == $id)' "$root/design/apps.json")
   latest=$(jq -r '.upstream.latest // "?"' <<<"$entry")
-  checked=$(jq -r 'if .checked == null then "-" elif .checked.version == .version then "yes" else "re-check" end' <<<"$entry")
-  port=$(jq -r '.mcp.port // "-"' <<<"$entry")
+  checked=$(jq -r 'if .observed == null then "-" elif .observed.version == .version then "yes" else "re-check" end' <<<"$entry")
+  port=$(jq -r '.port // "-"' <<<"$entry")
   bundle=$(ls -d "$(jq -r --arg t "$app" '.[$t][0].install_path' <<<"$tools")"/*.app 2>/dev/null | head -1 || true)
   running=-
   [ -n "$bundle" ] && pgrep -f "$bundle/Contents/MacOS/" >/dev/null && running=yes

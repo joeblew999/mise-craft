@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#MISE description="Add this repo's MCP servers (from .mcp.json) to Claude Desktop. Quit Claude Desktop first; undo with desktop:uninstall."
+#MISE description="Make Claude Desktop's servers from this repo match .mcp.json (the apps installed here): replaces the ones it added before, never touches others. Quit Claude Desktop first; undo with desktop:uninstall."
 # Lineage:
 #   run by   `mise run desktop:install`
-#   reads    .mcp.json
+#   reads    .mcp.json (written by mise-tasks/claude/sync for the apps installed here)
 #   writes   ~/Library/Application Support/Claude/claude_desktop_config.json
 #   undone   mise-tasks/desktop/uninstall
 set -euo pipefail
@@ -13,6 +13,7 @@ if [ -z "${CLAUDE_DESKTOP_CONFIG:-}" ] && pgrep -x Claude >/dev/null; then
   exit 1
 fi
 [ -f "$config" ] || { echo "No Claude Desktop config at $config. Open Claude Desktop once first." >&2; exit 1; }
+[ -f "$root/.mcp.json" ] || { echo "No .mcp.json yet: install an app first (mise run <app>:install)." >&2; exit 1; }
 
 # The servers in .mcp.json, rewritten for Claude Desktop, which starts them outside this repo with a
 # minimal PATH: mise by its full path, and `-C <repo>` so mise uses this repo's mise.toml (and runs
@@ -28,6 +29,7 @@ if [ -n "$clash" ]; then
 fi
 
 # printf without a trailing newline: Claude Desktop writes the file without one.
-printf '%s' "$(jq --argjson ours "$ours" '.mcpServers = ((.mcpServers // {}) + $ours)' "$config")" >"$config"
+# Drop the entries this repo added before, so an app uninstalled since then disappears, then add the current ones.
+printf '%s' "$(jq --argjson ours "$ours" --arg root "$root" '.mcpServers = (((.mcpServers // {}) | with_entries(select(.value.args[0:2] != ["-C", $root]))) + $ours)' "$config")" >"$config"
 jq -r --arg root "$root" '.mcpServers | to_entries[] | select(.value.args[0:2] == ["-C", $root]) | "added \(.key)"' "$config"
 echo "Open Claude Desktop to load them."

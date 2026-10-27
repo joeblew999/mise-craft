@@ -13,7 +13,7 @@
   never committed: installed CLIs and apps, their registration with macOS, servers registered in
   Claude Code and Claude Desktop, running apps, token files, documents.
 - **The boundary:** everything the pipeline produces lands at the repo root (`mise.toml`,
-  `mise.lock`, `.mcp.json`, `mcp-live.json`), where runtime reads it. Runtime never edits what
+  `mise.lock`, `servers.json`), where runtime reads it. Runtime never edits what
   design time produced.
 
 ## The pipeline (built)
@@ -23,11 +23,17 @@ Its stages run in this order, each reading only what the stages before it wrote:
 1. **fetch** (`mise -C design run fetch`): GitHub → the `upstream` blocks in `design/apps.json`.
 2. **edit**: you → the hand-written facts in `design/apps.json`.
 3. **validate**, 4. **generate**, 5. **lock**: check `design/apps.json`, write the root's
-   `mise.toml`, `.mcp.json` and `mcp-live.json`, then run `mise lock`. Each is its own task in
+   `mise.toml` and `servers.json`, then run `mise lock`. Each is its own task in
    `design/mise.toml` and depends on the one before it, so running any of them runs the earlier ones
    first; `mise -C design run gen` runs all three.
 
-## Proposal: family, apps, servers (not built)
+## Family, apps, servers (built, apart from step 6)
+
+Steps 1 to 5 below are built and proven (2026-10-27): `family.json` and the new `apps.json`, with
+every app's full description reproducing the old one exactly; problem numbers in place of
+`limits`; `servers.json`, with `.mcp.json` a runtime file written by `claude:sync`; installs with
+`--locked`; and validation of exact versions, override names, unique ports and bundles. Step 6, the
+`check` stage, is not built: until it is, `observed` is recorded by hand from the checks done.
 
 Sorting the problems by what each is about shows four axes: the Craft **family** (true of every app:
 2, 3, 6, 18), one **app** (where it differs: 5, 13, 14, 15, 16, 17, 24), the **host** the servers
@@ -99,13 +105,13 @@ Problem 13 needs the owner: which folders the headless servers may read and writ
 
 ## Still open
 
-1. **`.mcp.json` is design-time output that Claude Code treats as runtime registration** ("start these
-   servers here"), so a checked app that isn't installed shows as a failed server (problem 12).
-   Proposal: make `.mcp.json` a runtime file, written by the install tasks and not committed. Not
-   built; agree it with the owner first.
-2. **A runtime install rewrites `mise.lock`**, a design-time file (problem 25).
+1. **The `check` stage (step 6)**, which writes each app's `observed` block by running the app, so
+   that evidence has a single writer; then the remaining apps checked with it.
+2. **Confining the headless servers' file access** (problem 13): the owner chooses the folders.
 3. **`status` reads `design/apps.json` directly** (for each app's latest version, checked state and
    port), where every other runtime task reads only what the pipeline put at the root. Allowed by
-   the boundary as written; the alternative is for `gen` to write a small summary at the root.
-4. **`checked` in `design/apps.json`** records a runtime observation ("worked on this machine on this
-   date") in design-time data. Probably fine as evidence; owner to decide.
+   the boundary as written; the alternative is for `generate` to write a small summary at the root.
+
+Settled: `.mcp.json` is a runtime file (problem 12, fixed); installs run with `--locked`, so
+runtime never writes `mise.lock` (problem 25, fixed); what used to be `checked` is now `observed`,
+recorded evidence with its own block.

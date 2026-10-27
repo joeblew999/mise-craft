@@ -1,13 +1,14 @@
-# Lineage: written by hand. The design-time pipeline. design/ holds what you edit (apps.json) and the
-# stages below; everything they produce lands at the repo root, where runtime reads it. The pipeline
-# never reads the state of the machine.
+# Lineage: written by hand. The design-time pipeline. design/ holds what you edit (family.json and
+# apps.json) and the stages below; everything they produce lands at the repo root, where runtime
+# reads it. The pipeline never reads the state of the machine.
 #
-#   stage        task       reads                  writes
-#   1 fetch      fetch      GitHub, apps.json      apps.json (the upstream blocks only)
-#   2 edit       (you)                             apps.json (everything else)
-#   3 validate   validate   apps.json              nothing: stops the pipeline if an entry can't work
-#   4 generate   generate   apps.json              ../mise.toml, ../.mcp.json, ../mcp-live.json
-#   5 lock       lock       ../mise.toml           ../mise.lock
+#   stage        task       reads                        writes
+#   1 fetch      fetch      GitHub, apps.json            apps.json (the upstream blocks only)
+#   2 edit       (you)                                   family.json (what every app shares);
+#                                                        apps.json (everything else per app)
+#   3 validate   validate   family.json, apps.json       nothing: stops the pipeline if anything is wrong
+#   4 generate   generate   family.json, apps.json       ../mise.toml, ../servers.json
+#   5 lock       lock       ../mise.toml                 ../mise.lock
 #
 # Each of stages 3-5 depends on the one before it, so running any of them runs the earlier ones
 # first, in order: `mise run lock` validates and generates before it locks. `gen` runs all three.
@@ -19,17 +20,29 @@ description = "Stage 1: refresh each app's upstream block in apps.json from GitH
 run = "./fetch"
 
 [tasks.validate]
-description = "Stage 3: stop before anything is written if a checked app in apps.json can't produce a working live server."
+description = "Stage 3: stop before anything is written if family.json or apps.json is wrong: inexact versions, overrides of fields the family doesn't have, checked apps without a unique port or a usable bundle."
 run = '''
-jq -e '[.apps[] | select(.mcp.live) | select(
-    (.bundle | not) or
-    ((.mcp.opens_itself | not) and .bundle.name != .bundle.executable + ".app")
-  ) | .id] | if length == 0 then true else error("checked apps need a bundle whose name is the executable plus .app (scripts/mcp-open-app.sh opens and finds the app by that one name): \(join(", "))") end' \
-  apps.json >/dev/null
+jq -e -n --slurpfile fam family.json --slurpfile apps apps.json '
+  ($fam[0] | del(."//")) as $f | $apps[0].apps as $a
+  | def full($x): $f * ($x.overrides // {})
+    | walk(if type == "string" then gsub("\\{name\\}"; $x.name) else . end);
+  [ ($a[] | select(.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
+      | "\(.id): version \(.version) is not exact"),
+    ($a[] | . as $x | (.overrides // {}) | keys[] | select(. as $k | $f | has($k) | not)
+      | "\($x.id): overrides \(.), which family.json does not have"),
+    ($a[] | . as $x | (.overrides.mcp // {}) | keys[] | select(. as $k | $f.mcp | has($k) | not)
+      | "\($x.id): overrides mcp.\(.), which family.json does not have"),
+    ($a[] | select(.observed and (.port == null)) | "\(.id): checked but has no port"),
+    ([$a[] | select(.port) | .port] | group_by(.) | map(select(length > 1) | .[0])[]
+      | "port \(.) is used by more than one app"),
+    ($a[] | select(.observed) | . as $x | full($x)
+      | select((.mcp.opens_itself | not) and .bundle.name != .bundle.executable + ".app")
+      | "\($x.id): scripts/mcp-open-app.sh opens and finds the app by one name, so its bundle must be the executable plus .app")
+  ] | if length == 0 then true else error(join("\n")) end' >/dev/null
 '''
 
 [tasks.generate]
-description = "Stage 4: apps.json -> the root's mise.toml, .mcp.json and mcp-live.json."
+description = "Stage 4: family.json + apps.json -> the root's mise.toml and servers.json."
 depends = ["validate"]
 run = "./generate"
 
@@ -40,5 +53,5 @@ dir = "{{config_root}}/.."
 run = "mise lock"
 
 [tasks.gen]
-description = "Stages 3-5, in order: validate apps.json, generate the root's files from it, lock."
+description = "Stages 3-5, in order: validate, generate the root's files, lock."
 depends = ["lock"]
