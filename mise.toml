@@ -50,7 +50,8 @@ wordcraft-cli = "github:storytold/wordcraft"
 wordcraft = "github:storytold/wordcraft"
 
 [tools]
-jq = "1.8.2" # for the desktop:* tasks
+jq = "1.8.2" # for the desktop:* and apps:* tasks
+gh = "2.103.0" # for apps:fetch
 cadcraft-cli = { version = "0.13.0", asset_pattern = "cadcraft-cli-*-macos-universal.zip", os = ["macos"] }
 cadcraft = { version = "0.13.0", asset_pattern = "cadcraft-*-macos-universal.dmg", os = ["macos"], postinstall = 'sh "{{ config_root }}/scripts/unpack-dmg.sh"' }
 deckcraft-cli = { version = "0.11.1", asset_pattern = "deckcraft-cli-*-macos-universal.zip", os = ["macos"] }

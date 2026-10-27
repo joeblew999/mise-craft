@@ -5,7 +5,7 @@
 Install the apps of the [Craft App Suite](https://getartcraft.com/apps) with
 [mise](https://mise.jdx.dev), and let AI agents drive them over MCP while you watch the desktop app
 update. Everything runs from this repo's mise tasks, and everything they set up has a task that
-removes it. macOS only for now; [The apps](#the-apps) shows which apps are checked end to end.
+removes it. macOS only for now; `mise run status` shows which apps are checked end to end.
 
 ## Get started
 
@@ -34,8 +34,9 @@ mise config (mise ignores it in a project file).
 
 | Task | Does | Undone by |
 |---|---|---|
-| `status` | Shows each app's pinned version, control port, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
+| `status` | Shows each app's pinned and latest version, whether the pinned version is checked end to end, its control port, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
 | `gen` | Regenerates `mise.toml`, `.mcp.json` and `mcp-live.json` from [apps.json](apps.json), and updates `mise.lock` | (run it again after editing `apps.json`) |
+| `apps:fetch` | Refreshes each app's `upstream` block in `apps.json` from GitHub | (run it again; it only rewrites `upstream`) |
 | `<app>:install` | Installs the app's CLI and desktop app | `<app>:uninstall` |
 | `<app>:uninstall` | Removes every installed version of both and unregisters the app from macOS | `<app>:install` |
 | `<app>:watch` | Adds the app's live MCP server to Claude Code, for this project | `<app>:unwatch` |
@@ -55,28 +56,20 @@ connect.
 
 ## The apps
 
-[apps.json](apps.json) is the one list of apps: each app's pinned version and, for an app checked
-end to end, its control port and how its live server connects. `mise run status` shows them, along
-with what's installed and running. Each app's CLI, `<app>-cli`, runs a headless MCP server with
-`<app>-cli mcp`.
+[apps.json](apps.json) is the registry: everything this repo knows about each app. `mise run status`
+shows the main points, along with what's installed and running. For each app:
 
-The apps, all from [storytold](https://github.com/storytold):
-[CADCraft](https://github.com/storytold/cadcraft),
-[DeckCraft](https://github.com/storytold/deckcraft),
-[DesignCraft](https://github.com/storytold/designcraft),
-[EffectCraft](https://github.com/storytold/effectcraft),
-[FigCraft](https://github.com/storytold/figcraft),
-[FilmCraft](https://github.com/storytold/filmcraft),
-[GridCraft](https://github.com/storytold/gridcraft),
-[LightCraft](https://github.com/storytold/lightcraft),
-[PdfCraft](https://github.com/storytold/pdfcraft),
-[PhotoCraft](https://github.com/storytold/photocraft),
-[SoundCraft](https://github.com/storytold/soundcraft),
-[VectorCraft](https://github.com/storytold/vectorcraft) and
-[WordCraft](https://github.com/storytold/wordcraft).
+- **Written by hand:** its id, name, GitHub repo, the version pinned here, and the release downloads
+  to install. Once the app is checked end to end, also its app bundle and process name, its control
+  port, how its MCP servers start (`mcp`), which version was checked and when (`checked`), and what
+  goes wrong with it (`limits`) or is worth knowing (`notes`).
+- **Fetched from GitHub** by `mise run apps:fetch`, in its `upstream` block: its description, latest
+  release, the platforms its CLI and desktop app are published for, its MCP docs, and the port its
+  own docs use.
 
-The [ArtCraft Launcher](https://github.com/storytold/craft-launcher) isn't used here: it installs
-the desktop apps into `/Applications` from a GUI.
+Each app's CLI, `<app>-cli`, runs a headless MCP server with `<app>-cli mcp`. The
+[ArtCraft Launcher](https://github.com/storytold/craft-launcher) isn't used here: it installs the
+desktop apps into `/Applications` from a GUI.
 
 ## What this repo puts on your machine
 
@@ -108,8 +101,8 @@ Files the apps write themselves, such as documents, preferences and control toke
   unpacking. A `postinstall` step, [scripts/unpack-dmg.sh](scripts/unpack-dmg.sh), copies the `.app`
   out of the image and registers it with macOS so `open -a <App>` finds it. The apps stay in mise's
   install folders, not `/Applications`, and are signed and notarized by their publisher.
-- **Control ports.** Each desktop app takes `--control PORT`. Several apps default to 7979, so
-  `apps.json` gives each checked app its own. The port is written down, not worked out from the
+- **Control ports.** Each desktop app takes `--control PORT`. Several apps' own docs use 7979
+  (`upstream.docs_port`), so `apps.json` gives each checked app its own. The port is written down, not worked out from the
   app's place in the list, so a newly published app never moves another app's port.
 - **Opening the app for a live server.** An app whose server can open it (`"opens_itself"` in
   `apps.json`, CADCraft's `--launch`) opens at the first tool call. For the others,
@@ -131,13 +124,15 @@ What runs or reads what. Each file's header states its own lineage in full.
 mise-tasks/                  run by you: mise run <task>
   gen                        apps.json → mise.toml, .mcp.json, mcp-live.json; mise lock → mise.lock
   status                     reads apps.json, mise, .mcp.json, ~/.claude.json, Claude Desktop's config
+  apps/fetch                 GitHub (through gh) → each app's upstream block in apps.json
   apps/install, uninstall    → mise install / mise uninstall → scripts/unpack-dmg.sh (postinstall)
   apps/watch, unwatch        mcp-live.json → claude mcp add-json / remove → ~/.claude.json
   desktop/install, uninstall .mcp.json → Claude Desktop's config
 scripts/                     run by mise and Claude Code, never by hand
   unpack-dmg.sh              run by mise as each desktop app's postinstall
   mcp-open-app.sh            run by Claude Code as part of a live server's command
-apps.json                    the one list of apps, written by hand: read by gen and status
+apps.json                    the registry, written by hand except the upstream blocks (apps/fetch):
+                             read by gen and status
 mise.toml                    generated by gen; its <app>:* tasks run mise-tasks/apps/*
 mise.lock                    generated by mise lock
 .mcp.json                    headless servers, generated by gen: read by Claude Code, desktop/install, status
@@ -150,17 +145,11 @@ CLAUDE.md                    read by Claude Code; imports this README
 - **Claude Desktop** is tested on a copy of its config (the servers start the way Claude Desktop
   starts them, and uninstall restores the file exactly) but not yet in Claude Desktop itself, and
   it gets only the headless servers.
-- **CADCraft's first live call can fail** with "missing or invalid control token" right after
-  `--launch` opens the app: the bridge reads the old token before the app writes a new one
-  (upstream #2087). The error says it is safe to send again, and the retry works.
-- **GridCraft's `screenshot` needs its window visible**: a hidden window draws no frames, so the
-  call times out. Bring GridCraft to the front first.
-- **EffectCraft's window screenshots are about 28 MB** at full size; its `screenshot` tool takes
-  `max_side` to scale them down.
+- **Each app's own problems** are in its `limits` in [apps.json](apps.json).
 - **`mise install --locked`** also checks your global mise tools, which aren't in this lockfile, so
   name the tools: `mise install --locked cadcraft cadcraft-cli`.
-- **Platforms.** Every app publishes its CLI for macOS; only PdfCraft also publishes one for Linux,
-  and none publishes one for Windows.
+- **Platforms.** This repo installs the macOS builds only. Which platforms each app's CLI and
+  desktop app are published for is in its `upstream` block in `apps.json`.
 
 ## Plan
 
@@ -198,11 +187,14 @@ These rules are for people and agents alike; Claude Code reads this README throu
   is run by hand.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml`,
-  `.mcp.json` and `mcp-live.json` (`mise-tasks/gen`) and `mise.lock` (`mise lock`); every other
-  file is written by hand.
-  JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
+  `.mcp.json` and `mcp-live.json` (`mise-tasks/gen`), `mise.lock` (`mise lock`), and the `upstream`
+  blocks in `apps.json` (`mise-tasks/apps/fetch`); everything else is written by hand. JSON files,
+  which can't hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
+- **`apps.json` records only verified facts.** A field nobody has confirmed is left out, never
+  guessed: an app's bundle and process name are recorded once it's installed, and its `mcp` and
+  `checked` entries once it's checked end to end.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;
-  then give it a `port` and a `live` entry in `apps.json`, and run `mise run gen`.
+  then record its `bundle`, `mcp` and `checked` entries in `apps.json`, and run `mise run gen`.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
   that would download gigabytes.

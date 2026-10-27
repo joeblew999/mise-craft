@@ -1,56 +1,492 @@
 {
-  "//": "Lineage: written by hand, the one list of Craft apps. Read by mise-tasks/gen, which generates mise.toml, .mcp.json and mcp-live.json from it, and by mise-tasks/status. An app with a live entry is checked end to end; in live, {port} stands for its port.",
+  "//": "Lineage: the registry of Craft apps. Written by hand, except each app's upstream block, which `mise run apps:fetch` rewrites from GitHub (docs_port is the port the app's own docs use in examples). Read by mise-tasks/gen, which generates mise.toml, .mcp.json and mcp-live.json from it, and by mise-tasks/status. An app with an mcp block is checked end to end; in mcp.live, {port} stands for mcp.port.",
   "apps": [
     {
       "id": "cadcraft",
       "name": "CADCraft",
+      "repo": "storytold/cadcraft",
       "version": "0.13.0",
-      "port": 7979,
-      "live": ["--connect", "127.0.0.1:{port}", "--lazy", "--launch"],
-      "opens_itself": true
+      "install": {
+        "cli": "cadcraft-cli-*-macos-universal.zip",
+        "cli_bin": "cadcraft-cli",
+        "app": "cadcraft-*-macos-universal.dmg"
+      },
+      "bundle": {
+        "name": "CADCraft.app",
+        "executable": "CADCraft"
+      },
+      "mcp": {
+        "port": 7979,
+        "live": [
+          "--connect",
+          "127.0.0.1:{port}",
+          "--lazy",
+          "--launch"
+        ],
+        "opens_itself": true
+      },
+      "checked": {
+        "version": "0.13.0",
+        "on": "2026-10-26"
+      },
+      "limits": [
+        "The first live call right after --launch opens the app can fail with 'missing or invalid control token': the bridge reads the old token before the app writes a new one (upstream #2087). The error says it is safe to send again, and the retry works."
+      ],
+      "upstream": {
+        "about": "CADCraft: computer-aided design and drafting — an open-source, clean-room AutoCAD-style app in pure Rust",
+        "latest": "0.13.0",
+        "docs": "https://github.com/storytold/cadcraft/blob/main/docs/mcp.md",
+        "docs_port": 7979,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
-    { "id": "deckcraft", "name": "DeckCraft", "version": "0.11.1" },
+    {
+      "id": "deckcraft",
+      "name": "DeckCraft",
+      "repo": "storytold/deckcraft",
+      "version": "0.11.1",
+      "install": {
+        "cli": "deckcraft-cli-*-macos-universal.zip",
+        "cli_bin": "deckcraft-cli",
+        "app": "deckcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "Presentations and slide shows: an open-source, clean-room reimplementation of Microsoft PowerPoint in pure Rust. Part of the ArtCraft Crafting Apps.",
+        "latest": "0.11.1",
+        "docs": "https://github.com/storytold/deckcraft/blob/main/docs/mcp.md",
+        "docs_port": 7990,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
     {
       "id": "designcraft",
       "name": "DesignCraft",
+      "repo": "storytold/designcraft",
       "version": "0.13.0",
-      "port": 7981,
-      "live": ["--connect", "127.0.0.1:{port}"]
+      "install": {
+        "cli": "designcraft-cli-*-macos-universal.zip",
+        "cli_bin": "designcraft-cli",
+        "app": "designcraft-*-macos-universal.dmg"
+      },
+      "bundle": {
+        "name": "DesignCraft.app",
+        "executable": "DesignCraft"
+      },
+      "mcp": {
+        "port": 7981,
+        "live": [
+          "--connect",
+          "127.0.0.1:{port}"
+        ]
+      },
+      "checked": {
+        "version": "0.13.0",
+        "on": "2026-10-26"
+      },
+      "upstream": {
+        "about": "DesignCraft: An open-source page and layout design editor written by scratch in pure Rust",
+        "latest": "0.13.0",
+        "docs": "https://github.com/storytold/designcraft/blob/main/docs/mcp.md",
+        "docs_port": 7979,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
     {
       "id": "effectcraft",
       "name": "EffectCraft",
+      "repo": "storytold/effectcraft",
       "version": "0.17.0",
-      "port": 7982,
-      "live": ["--bridge", "{port}"]
+      "install": {
+        "cli": "effectcraft-cli-*-macos-universal.zip",
+        "cli_bin": "effectcraft-cli",
+        "app": "effectcraft-*-macos-universal.dmg"
+      },
+      "bundle": {
+        "name": "EffectCraft.app",
+        "executable": "EffectCraft"
+      },
+      "mcp": {
+        "port": 7982,
+        "live": [
+          "--bridge",
+          "{port}"
+        ]
+      },
+      "checked": {
+        "version": "0.17.0",
+        "on": "2026-10-26"
+      },
+      "limits": [
+        "Window screenshots are about 28 MB at full size; the screenshot tool takes max_side to scale them down."
+      ],
+      "upstream": {
+        "about": "EffectCraft: An open-source motion graphics and compositing tool written by scratch in pure Rust",
+        "latest": "0.17.0",
+        "docs": "https://github.com/storytold/effectcraft/blob/main/docs/mcp.md",
+        "docs_port": 9877,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
     {
       "id": "figcraft",
       "name": "FigCraft",
+      "repo": "storytold/figcraft",
       "version": "0.11.2",
-      "//": "Not checked yet; its usage text shows --attach PORT."
+      "install": {
+        "cli": "figcraft-cli-*-macos-universal.zip",
+        "cli_bin": "figcraft-cli",
+        "app": "figcraft-*-macos-universal.dmg"
+      },
+      "notes": [
+        "Not checked yet; its usage text shows --attach PORT for driving the running app."
+      ],
+      "upstream": {
+        "about": "FigCraft: interface design and prototyping; an open-source, clean-room reimplementation of collaborative design workflows in pure Rust",
+        "latest": "0.11.2",
+        "docs": "https://github.com/storytold/figcraft/blob/main/docs/mcp.md",
+        "docs_port": 7979,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
-    { "id": "filmcraft", "name": "FilmCraft", "version": "0.13.0" },
+    {
+      "id": "filmcraft",
+      "name": "FilmCraft",
+      "repo": "storytold/filmcraft",
+      "version": "0.13.0",
+      "install": {
+        "cli": "filmcraft-cli-*-macos-universal.zip",
+        "cli_bin": "filmcraft-cli",
+        "app": "filmcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "FilmCraft: An open-source, nonlinear video editor written by scratch in pure Rust",
+        "latest": "0.13.0",
+        "docs_port": 9876,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
     {
       "id": "gridcraft",
       "name": "GridCraft",
+      "repo": "storytold/gridcraft",
       "version": "0.12.1",
-      "port": 7985,
-      "live": ["--connect", "{port}"]
+      "install": {
+        "cli": "gridcraft-cli-*-macos-universal.zip",
+        "cli_bin": "gridcraft-cli",
+        "app": "gridcraft-*-macos-universal.dmg"
+      },
+      "bundle": {
+        "name": "GridCraft.app",
+        "executable": "GridCraft"
+      },
+      "mcp": {
+        "port": 7985,
+        "live": [
+          "--connect",
+          "{port}"
+        ]
+      },
+      "checked": {
+        "version": "0.12.1",
+        "on": "2026-10-26"
+      },
+      "limits": [
+        "The screenshot tool needs the window visible: a hidden window draws no frames, so the call times out. Bring GridCraft to the front first."
+      ],
+      "upstream": {
+        "about": "GridCraft: an open-source, clean-room spreadsheet (Microsoft Excel-style) in pure Rust. By ArtCraft.",
+        "latest": "0.12.1",
+        "docs": "https://github.com/storytold/gridcraft/blob/main/docs/mcp.md",
+        "docs_port": 7979,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
-    { "id": "lightcraft", "name": "LightCraft", "version": "0.14.0" },
-    { "id": "pdfcraft", "name": "PdfCraft", "version": "0.14.0" },
-    { "id": "photocraft", "name": "PhotoCraft", "version": "0.16.0" },
-    { "id": "soundcraft", "name": "SoundCraft", "version": "0.13.1" },
+    {
+      "id": "lightcraft",
+      "name": "LightCraft",
+      "repo": "storytold/lightcraft",
+      "version": "0.14.0",
+      "install": {
+        "cli": "lightcraft-cli-*-macos-universal.zip",
+        "cli_bin": "lightcraft-cli",
+        "app": "lightcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "LightCraft: An open-source non-destructive photo editor written by scratch in pure Rust",
+        "latest": "0.14.0",
+        "docs": "https://github.com/storytold/lightcraft/blob/main/docs/mcp.md",
+        "docs_port": 7980,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
+    {
+      "id": "pdfcraft",
+      "name": "PdfCraft",
+      "repo": "storytold/pdfcraft",
+      "version": "0.14.0",
+      "install": {
+        "cli": "pdfcraft-cli-*-macos-universal.zip",
+        "cli_bin": "pdfcraft-cli",
+        "app": "pdfcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "PdfCraft: An open-source PDF reader and editor written by scratch in pure Rust",
+        "latest": "0.14.0",
+        "docs": "https://github.com/storytold/pdfcraft/blob/main/docs/mcp.md",
+        "cli_platforms": [
+          "linux-aarch64",
+          "linux-x86_64",
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
+    {
+      "id": "photocraft",
+      "name": "PhotoCraft",
+      "repo": "storytold/photocraft",
+      "version": "0.16.0",
+      "install": {
+        "cli": "photocraft-cli-*-macos-universal.zip",
+        "cli_bin": "photocraft-cli",
+        "app": "photocraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "PhotoCraft: An open-source, photo editor written by scratch in pure Rust",
+        "latest": "0.16.0",
+        "docs": "https://github.com/storytold/photocraft/blob/main/docs/mcp.md",
+        "docs_port": 7878,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
+    {
+      "id": "soundcraft",
+      "name": "SoundCraft",
+      "repo": "storytold/soundcraft",
+      "version": "0.13.1",
+      "install": {
+        "cli": "soundcraft-cli-*-macos-universal.zip",
+        "cli_bin": "soundcraft-cli",
+        "app": "soundcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "An open-source, clean-room reimplementation of Avid Pro Tools in pure Rust",
+        "latest": "0.13.1",
+        "docs": "https://github.com/storytold/soundcraft/blob/main/docs/mcp.md",
+        "docs_port": 7801,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    },
     {
       "id": "vectorcraft",
       "name": "VectorCraft",
+      "repo": "storytold/vectorcraft",
       "version": "0.17.0",
-      "port": 7990,
-      "live": ["--connect", "127.0.0.1:{port}"],
-      "headless": ["--headless"],
-      "//": "Its server connects to a running app on 7979 by default, so the headless server needs --headless."
+      "install": {
+        "cli": "vectorcraft-cli-*-macos-universal.zip",
+        "cli_bin": "vectorcraft-cli",
+        "app": "vectorcraft-*-macos-universal.dmg"
+      },
+      "bundle": {
+        "name": "VectorCraft.app",
+        "executable": "VectorCraft"
+      },
+      "mcp": {
+        "port": 7990,
+        "headless": [
+          "--headless"
+        ],
+        "live": [
+          "--connect",
+          "127.0.0.1:{port}"
+        ]
+      },
+      "checked": {
+        "version": "0.17.0",
+        "on": "2026-10-26"
+      },
+      "notes": [
+        "Its MCP server connects to a running app on port 7979 by default, so the headless server is started with --headless.",
+        "The app opens with no document; create one (run_command file.new) before drawing."
+      ],
+      "upstream": {
+        "about": "VectorCraft: An open-source, vector art tool written by scratch in pure Rust",
+        "latest": "0.17.0",
+        "docs": "https://github.com/storytold/vectorcraft/blob/main/docs/mcp.md",
+        "docs_port": 7979,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
     },
-    { "id": "wordcraft", "name": "WordCraft", "version": "0.11.0" }
+    {
+      "id": "wordcraft",
+      "name": "WordCraft",
+      "repo": "storytold/wordcraft",
+      "version": "0.11.0",
+      "install": {
+        "cli": "wordcraft-cli-*-macos-universal.zip",
+        "cli_bin": "wordcraft-cli",
+        "app": "wordcraft-*-macos-universal.dmg"
+      },
+      "upstream": {
+        "about": "An open-source, clean-room reimplementation of Microsoft Word in pure Rust",
+        "latest": "0.11.0",
+        "docs": "https://github.com/storytold/wordcraft/blob/main/docs/mcp.md",
+        "docs_port": 7981,
+        "cli_platforms": [
+          "macos-universal"
+        ],
+        "app_platforms": [
+          "freebsd-x86_64",
+          "linux-aarch64",
+          "linux-riscv64",
+          "linux-x86_64",
+          "macos-universal",
+          "windows-arm64",
+          "windows-x64",
+          "windows-x86"
+        ]
+      }
+    }
   ]
 }

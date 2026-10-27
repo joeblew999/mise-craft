@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#MISE description="Refresh each app's upstream block in apps.json from GitHub: description, latest release, published platforms, MCP docs and the port its docs use. Changes nothing else."
+# Lineage:
+#   run by   `mise run apps:fetch`
+#   reads    apps.json; GitHub through gh (each repo's latest release, README and docs)
+#   writes   the upstream block of each app in apps.json, and nothing else
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+
+# The OS and architecture in a release asset's name, such as macos-universal or linux-x86_64.
+platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
+
+upstream='{}'
+for id in $(jq -r '.apps[].id' apps.json); do
+  repo=$(jq -r --arg id "$id" '.apps[] | select(.id == $id) | .repo' apps.json)
+  release=$(gh release view -R "$repo" --json tagName,assets)
+  about=$(gh repo view "$repo" --json description --jq .description)
+  docs=""
+  if gh api "repos/$repo/contents/docs/mcp.md" --silent 2>/dev/null; then
+    docs="https://github.com/$repo/blob/main/docs/mcp.md"
+  fi
+  # The first `<app> --control <port>` in the README and MCP docs is the port the docs use.
+  text=$( {
+    gh api "repos/$repo/readme" --jq .content | base64 -d
+    for f in docs/mcp.md docs/control-protocol.md; do
+      gh api "repos/$repo/contents/$f" --jq .content 2>/dev/null | base64 -d 2>/dev/null || true
+    done
+  } )
+  port=$(grep -o -E -- "$id --control [0-9]+" <<<"$text" | head -1 | grep -o -E '[0-9]+$' || true)
+  upstream=$(jq --arg id "$id" --arg about "$about" --arg docs "$docs" --arg port "$port" \
+    --argjson release "$release" ". + {(\$id): ({
+      about: \$about,
+      latest: (\$release.tagName | ltrimstr(\"v\")),
+      docs: (if \$docs == \"\" then null else \$docs end),
+      docs_port: (if \$port == \"\" then null else (\$port | tonumber) end),
+      cli_platforms: ([\$release.assets[].name | select(startswith(\$id + \"-cli-\")) | $platform] | unique),
+      app_platforms: ([\$release.assets[].name
+        | select(startswith(\$id + \"-\") and (startswith(\$id + \"-cli-\") or startswith(\$id + \"-web-\") | not))
+        | $platform] | unique)
+    } | with_entries(select(.value != null)))}" <<<"$upstream")
+done
+
+# Write through a temporary file, so a failed run leaves apps.json as it was.
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+jq --argjson u "$upstream" '.apps |= map(.upstream = $u[.id])' apps.json >"$tmp"
+cat "$tmp" >apps.json
+jq -r '.apps[] | select(.upstream.latest != .version) | "\(.name): pinned \(.version), latest \(.upstream.latest)"' apps.json

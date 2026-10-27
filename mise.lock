@@ -242,6 +242,23 @@ checksum_source = "mise-versions"
 url = "https://github.com/storytold/filmcraft/releases/download/v0.13.0/filmcraft-cli-0.13.0-macos-universal.zip"
 url_api = "https://api.github.com/repos/storytold/filmcraft/releases/assets/675162708"
 
+[[tools.gh]]
+version = "2.103.0"
+backend = "aqua:cli/cli"
+specifiers = ["2.103.0"]
+
+[tools.gh."platforms.macos-arm64"]
+checksum = "sha256:54be566e9f614bea5de8021e95b9ad33dfee3b9d2ea120c9c294c00defaa5014"
+url = "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_macOS_arm64.zip"
+url_api = "https://api.github.com/repos/cli/cli/releases/assets/662956481"
+provenance = "github-attestations"
+
+[tools.gh."platforms.macos-x64"]
+checksum = "sha256:64d1734941f104f996271c820daa50e96902c2618f9b4c1e63c41519517a9c6b"
+url = "https://github.com/cli/cli/releases/download/v2.103.0/gh_2.103.0_macOS_amd64.zip"
+url_api = "https://api.github.com/repos/cli/cli/releases/assets/662956458"
+provenance = "github-attestations"
+
 [[tools.gridcraft]]
 version = "0.12.1"
 backend = "github:storytold/gridcraft"
