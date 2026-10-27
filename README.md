@@ -35,7 +35,7 @@ mise config (mise ignores it in a project file).
 | Task | Does | Undone by |
 |---|---|---|
 | `status` | Shows each app's pinned version, whether its CLI and desktop app are installed, whether it's running, and its MCP servers | (read-only) |
-| `gen` | Regenerates `mise.toml` from `scripts/gen-mise-toml.sh` and updates `mise.lock` | (run it again after editing the script) |
+| `gen` | Regenerates `mise.toml` from the app list in [mise-tasks/gen](mise-tasks/gen) and updates `mise.lock` | (run it again after editing the script) |
 | `<app>:install` | Installs the app's CLI and desktop app | `<app>:uninstall` |
 | `<app>:uninstall` | Removes every installed version of both and unregisters the app from macOS | `<app>:install` |
 | `<app>:watch` | Adds the app's live MCP server to Claude Code, for this project | `<app>:unwatch` |
@@ -56,8 +56,8 @@ connect.
 ## The apps
 
 Each app's CLI, `<app>-cli`, runs a headless MCP server with `<app>-cli mcp`, and drives the running
-desktop app with the option in the table. Versions are pinned in
-[scripts/gen-mise-toml.sh](scripts/gen-mise-toml.sh); `mise run status` shows them.
+desktop app with the option in the table. Versions are pinned in the app list in
+[mise-tasks/gen](mise-tasks/gen); `mise run status` shows them.
 
 | App | Checked here | Port | Live server connects with | Desktop app opens after `watch` |
 |---|---|---|---|---|
@@ -96,7 +96,7 @@ Files the apps write themselves, such as documents, preferences and control toke
 - **Two tools per app.** [mise.toml](mise.toml) installs each app's GitHub repo twice under
   [tool aliases](https://mise.jdx.dev/dev-tools/backends/github.html): `<app>-cli` from the CLI
   zip and `<app>` from the desktop app's DMG. It's generated, tasks included, by
-  [scripts/gen-mise-toml.sh](scripts/gen-mise-toml.sh) from its list of apps and versions.
+  [mise-tasks/gen](mise-tasks/gen) from its list of apps and versions.
 - **Exact versions.** mise's `minimum_release_age` hides releases newer than a set age, so `latest`
   can lag behind the newest release. [mise.lock](mise.lock) pins each download's SHA-256, matching
   the release's `SHA256SUMS.txt`. Each version installs to its own folder, so installing again
@@ -162,11 +162,15 @@ These rules are for people and agents alike; Claude Code reads this README throu
   `.mcp.json`.
 - **mise only.** No Homebrew, no ArtCraft Launcher, no manual DMG installs. macOS built-ins called
   from mise tasks and hooks (`hdiutil`, `lsregister`, `open`) are fine.
-- **Change `scripts/gen-mise-toml.sh`, not `mise.toml`**, then run `mise run gen`. Tasks live in
-  `mise-tasks/`; `gen` is one of them, so regenerating never rewrites its own definition.
+- **Change the app list in `mise-tasks/gen`, not `mise.toml`**, then run `mise run gen`. `gen` is a
+  file task, not part of `mise.toml`, so regenerating never rewrites its own definition.
+- **`mise-tasks/` holds what you run; `scripts/` holds what mise and Claude Code run.**
+  `scripts/unpack-dmg.sh` is mise's postinstall hook, and `scripts/mcp-open-app.sh` sits in a live
+  server's command, where stdin and stdout carry MCP messages that `mise run` would disturb. Neither
+  is run by hand.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml`
-  (`scripts/gen-mise-toml.sh`) and `mise.lock` (`mise lock`); every other file is written by hand.
+  (`mise-tasks/gen`) and `mise.lock` (`mise lock`); every other file is written by hand.
   JSON files, which can't hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
   first. For an app, that's install, an MCP handshake, and a tool call that shows up in the app;

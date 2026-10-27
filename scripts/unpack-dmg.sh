@@ -7,6 +7,8 @@
 #   writes   <app>.app in the tool's install folder; registers it with LaunchServices
 #   undone   mise-tasks/apps/uninstall
 set -e
+# mise sets this for a postinstall. Run any other way, stop before touching anything.
+: "${MISE_TOOL_INSTALL_PATH:?is not set: this script is the mise postinstall hook, not something to run by hand}"
 cd "$MISE_TOOL_INSTALL_PATH"
 dmg=$(ls) # the download is the only file in the install directory
 mnt=$(mktemp -d)
