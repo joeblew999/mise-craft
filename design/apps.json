@@ -2,7 +2,7 @@
   "//": [
     "Lineage: written by hand (stage 3, record), by whoever maintains this repo. No script writes it.",
     "Each app holds only its definition: id, name, version (the exact version installed), checked (the version that was checked end to end: installed, `mise run app:check <app>` in design/, and a tool call that showed up in the app; an app without it is unchecked and gets no MCP servers), port (its control port, given once checked) and overrides (only where it differs from design/family.json, in the same shape). What every app shares is in design/family.json; how particular apps behave is in docs/problems.md.",
-    "Read by: every stage in design/ (merged with design/family.json by design/app-merge.jq) and mise-tasks/apps/status. Generates, through design/config-generate: the repo root's mise.toml and servers.json."
+    "Read by: every stage in design/ (merged with design/family.json by design/scripts/app-merge.jq) and mise-tasks/apps/status. Generates, through design/scripts/5-config-generate: the repo root's mise.toml and servers.json."
   ],
   "apps": [
     {

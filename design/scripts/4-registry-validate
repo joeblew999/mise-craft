@@ -9,7 +9,7 @@
 #   reads    design/family.json, design/apps.json
 #   writes   nothing
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # design/, where the registry is
 problems=$(mktemp)
 trap 'rm -f "$problems"' EXIT
 {

@@ -6,12 +6,12 @@
 #
 # Lineage:
 #   run by   `mise run upstream:fetch` in design/ (design/mise.toml)
-#   reads    design/apps.json, design/family.json and design/app-merge.jq (each app's version, repo,
+#   reads    design/apps.json, design/family.json and design/scripts/app-merge.jq (each app's version, repo,
 #            docs, control option and asset names); GitHub through gh (each repo's latest release,
 #            README and docs)
 #   writes   nothing: it prints a table
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."  # design/, where the registry is
 
 # The OS and architecture in a release asset's name, such as macos-universal or linux-x86_64. The
 # desktop app's assets are the app's other assets, except its web build (<app>-web-*), which this repo
@@ -21,7 +21,7 @@ platform='(capture("-(?<p>(macos|linux|windows|freebsd)-[a-z0-9_]+)") | .p)?'
 row='%-12s %-8s %-8s %-9s %-4s %-16s %s\n'
 printf "$row" APP PINNED LATEST "DOCS PORT" DOCS "CLI PLATFORMS" "APP PLATFORMS"
 for id in $(jq -r '.apps[].id' apps.json); do
-  app=$(jq -c --arg id "$id" --slurpfile fam family.json -L . 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
+  app=$(jq -c --arg id "$id" --slurpfile fam family.json -L scripts 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
   repo=$(jq -r .repo <<<"$app")
   mcp_doc=$(jq -r .docs.mcp <<<"$app")
   control_doc=$(jq -r .docs.control <<<"$app")

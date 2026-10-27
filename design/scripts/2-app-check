@@ -7,14 +7,14 @@
 #
 # Lineage:
 #   run by   `mise run app:check <app>` in design/ (design/mise.toml)
-#   reads    design/family.json, design/apps.json, design/app-merge.jq; the app's installed CLI and bundle
+#   reads    design/family.json, design/apps.json, design/scripts/app-merge.jq; the app's installed CLI and bundle
 #   runs     the app's CLI and both its MCP servers, the live one through scripts/app-open.sh unless
 #            the server opens the app itself
 #   writes   nothing: it prints what it found, and exits non-zero if something didn't work
 set -euo pipefail
-cd "$(dirname "$0")"
-id=${1:?usage: app-check <app>}
-app=$(jq -c --arg id "$id" --slurpfile fam family.json -L . 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
+cd "$(dirname "$0")/.."  # design/, where the registry is
+id=${1:?usage: 2-app-check <app>}
+app=$(jq -c --arg id "$id" --slurpfile fam family.json -L scripts 'include "app-merge"; .apps[] | select(.id == $id) | full($fam[0])' apps.json)
 [ -n "$app" ] || { echo "$id is not in apps.json" >&2; exit 1; }
 cli=$(jq -r '.install.cli_bin' <<<"$app")
 sub=$(jq -r '.mcp.subcommand' <<<"$app")
