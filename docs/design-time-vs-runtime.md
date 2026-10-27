@@ -6,7 +6,8 @@
 
 - **Design time** is what the repo says should exist, identical on every machine, changed only by
   editing and committing. It lives in `design/`: what you edit (`design/apps.json`) and the pipeline
-  that turns it into files (`design/fetch`, `design/gen`, defined in `design/mise.toml`). It never
+  that turns it into files (`design/fetch`, `design/generate`, and the validate and lock stages
+  defined in `design/mise.toml`). It never
   reads the state of the machine.
 - **Runtime** is what exists on one machine now, changed only by running tasks (each with an undo),
   never committed: installed CLIs and apps, their registration with macOS, servers registered in
@@ -21,9 +22,10 @@ Its stages run in this order, each reading only what the stages before it wrote:
 
 1. **fetch** (`mise -C design run fetch`): GitHub → the `upstream` blocks in `design/apps.json`.
 2. **edit**: you → the hand-written facts in `design/apps.json`.
-3. **validate**, 4. **generate**, 5. **lock** (`mise -C design run gen`, always together, in order):
-   check `design/apps.json`, write the root's `mise.toml`, `.mcp.json` and `mcp-live.json`, then
-   run `mise lock`.
+3. **validate**, 4. **generate**, 5. **lock**: check `design/apps.json`, write the root's
+   `mise.toml`, `.mcp.json` and `mcp-live.json`, then run `mise lock`. Each is its own task in
+   `design/mise.toml` and depends on the one before it, so running any of them runs the earlier ones
+   first; `mise -C design run gen` runs all three.
 
 ## Still open
 
