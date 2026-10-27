@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-#MISE description="Show each Craft app: pinned version, whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code (.mcp.json) and Claude Desktop."
+#MISE description="Show each Craft app: pinned version, control port (checked apps only), whether its CLI and desktop app are installed, whether the app is running, and its MCP servers in Claude Code and Claude Desktop."
 # Lineage:
 #   run by   `mise run status`
-#   reads    `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config (changes nothing)
+#   reads    apps.json, `mise ls`, .mcp.json, ~/.claude.json, Claude Desktop's config
+#            (changes nothing)
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
@@ -16,14 +17,15 @@ desktop_servers=$([ -f "$desktop" ] && jq -r --arg root "$root" \
 installed() { [ "$(jq -r --arg t "$1" '.[$t][0].installed // false' <<<"$tools")" = true ] && echo yes || echo -; }
 servers() { grep -E "^$1(-app)?$" <<<"$2" | tr '\n' ' ' || true; }
 
-printf '%-12s %-8s %-4s %-4s %-8s %-28s %s\n' APP VERSION CLI APP RUNNING "CLAUDE CODE" "CLAUDE DESKTOP"
+printf '%-12s %-8s %-5s %-4s %-4s %-8s %-28s %s\n' APP VERSION PORT CLI APP RUNNING "CLAUDE CODE" "CLAUDE DESKTOP"
 apps=$(jq -r --arg config "$root/mise.toml" \
   'to_entries[] | select(.value[0].source.path == $config) | .key | select(endswith("-cli")) | rtrimstr("-cli")' <<<"$tools")
 for app in $apps; do
   version=$(jq -r --arg t "$app" '.[$t][0].requested_version' <<<"$tools")
+  port=$(jq -r --arg id "$app" '.apps[] | select(.id == $id) | .port // "-"' "$root/apps.json")
   bundle=$(ls -d "$(jq -r --arg t "$app" '.[$t][0].install_path' <<<"$tools")"/*.app 2>/dev/null | head -1 || true)
   running=-
   [ -n "$bundle" ] && pgrep -f "$bundle/Contents/MacOS/" >/dev/null && running=yes
-  printf '%-12s %-8s %-4s %-4s %-8s %-28s %s\n' "$app" "$version" "$(installed "$app-cli")" "$(installed "$app")" \
+  printf '%-12s %-8s %-5s %-4s %-4s %-8s %-28s %s\n' "$app" "$version" "$port" "$(installed "$app-cli")" "$(installed "$app")" \
     "$running" "$(servers "$app" "$code_servers")" "$(servers "$app" "$desktop_servers")"
 done
