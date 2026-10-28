@@ -65,15 +65,17 @@ Everything the stages produce lands at the repo root. They run in this order, as
 
 ```sh
 mise -C design run upstream:fetch       # 1. prints each app's pinned and latest version, from GitHub
-mise -C design run app:check cadcraft   # 2. prints what an installed app shows, and fails if it didn't work
+mise -C design run app:check cadcraft   # 2. runs an installed app and its proof; report → design/checks/
                                         # 3. record: the maintainer edits family.json, apps.json
                                         #    and docs/problems.md
 mise -C design run config:build         # 4-6. validate, generate mise.toml and servers.json, lock
 ```
 
-Stages 1 and 2 bring in facts from outside, so they run only when asked, and they write nothing:
-what they print is the log, and the maintainer decides what to record. Stage 2 is the only one that
-runs anything on the machine: it needs the app installed, and opens it to list its live tools. Stages 4 to 6 are tasks of their own, and each
+Stages 1 and 2 bring in facts from outside, so they run only when asked. Stage 1 only prints.
+Stage 2 is the only one that runs anything on the machine: it needs the app installed, opens it,
+lists its tools and makes its proof (the calls in `apps.json` that change something you can see in
+the app), and keeps what it printed as a report in `design/checks/<app>.txt`, which ends in
+`passed` or `failed`. The maintainer decides what to record from both. Stages 4 to 6 are tasks of their own, and each
 depends on the one before it, so running any of them runs the earlier ones first: nothing can be
 locked before it is generated. Runtime tasks read what the stages produced and never change it:
 installs run with `--locked`, so they never write `mise.lock`.
@@ -92,8 +94,10 @@ What this repo knows about the Craft apps is in two files:
 - **[design/apps.json](design/apps.json): each app's definition, and nothing else.** Written by
   hand: `id`, `name`, `version` (the exact version installed), `checked` (the version that was
   checked end to end; without it the app is unchecked and gets no MCP servers), `port` (its control
-  port, once checked) and `overrides` (only where it differs from the family, in the same shape, so
-  every way an app differs is listed there). An app without `overrides` is either checked and the
+  port, once checked), `overrides` (only where it differs from the family, in the same shape, so
+  every way an app differs is listed there) and `proof` (the tool calls that make a change you can
+  see in the app). `checked` is only allowed when `app:check`'s report in
+  [design/checks/](design/checks) says that version passed, so it is evidence, not anyone's word. An app without `overrides` is either checked and the
   same as the family, or unchecked; `checked` says which.
 
 An app's full description is the family with its `overrides` laid over it
@@ -168,9 +172,10 @@ design/                          design time: the registry and its six stages (m
   family.json                    what every Craft app shares, written by hand (stage 3)
   apps.json                      each app's definition, written by hand (stage 3); read by every stage
                                  and by apps:status
+  checks/<app>.txt               app:check's report on each app (stage 2): the evidence for checked
   scripts/                       the stages' scripts, run by the tasks in design/mise.toml
     1-upstream-fetch             stage 1, upstream:fetch: GitHub (through gh) → printed table
-    2-app-check                  stage 2, app:check: an installed app → printed report
+    2-app-check                  stage 2, app:check: an installed app and its proof → checks/<app>.txt
     4-registry-validate          stage 4, registry:validate: stops the build if the registry is wrong
     5-config-generate            stage 5, config:generate: registry → ../mise.toml, ../servers.json
     app-merge.jq                 the family + app merge, shared by stages 1, 2 and 5
@@ -260,14 +265,18 @@ These rules are for people and agents alike; Claude Code reads this README throu
   problem goes in docs/problems.md too. About everything: in this README. Never leave it in a test log or a commit message only.
 - **Every file states its lineage at the top**: what runs or reads it, what it runs, reads and
   writes, and what undoes it. Generated files also say what generates them: `mise.toml` and
-  `servers.json` (`design/scripts/5-config-generate`), `mise.lock` (`mise lock`) and `.mcp.json`
-  (`claude-code:sync`, at runtime); everything else is written by hand. JSON files, which can't
+  `servers.json` (`design/scripts/5-config-generate`), `mise.lock` (`mise lock`), `design/checks/`
+  (`design/scripts/2-app-check`) and `.mcp.json` (`claude-code:sync`, at runtime); everything else
+  is written by hand. JSON files, which can't
   hold comments, use a `"//"` key; `mise.lock` keeps the header mise writes.
 - **`design/apps.json` records only verified facts.** A field nobody has confirmed is left out,
-  never guessed: an app's `checked`, `port` and `overrides` once it's checked end to end.
+  never guessed: an app's `checked`, `port` and `overrides` once it's checked end to end, and
+  `checked` only with a report in `design/checks/` that says that version passed.
 - **Make real changes and test them end to end**, instead of proposing throwaway experiments
-  first. Commit, then run `mise run task:log repo:test`, and push only if every step passes. For an app, that's install, `mise -C design run app:check <app>`, and a tool call that shows
-  up in the app; then record its `checked`, `port` and `overrides` in `design/apps.json`, how it
-  behaves in docs/problems.md, and run `mise -C design run config:build`.
+  first. Commit, then run `mise run task:log repo:test`, and push only if every step passes. For
+  an app, that's install, give it a `port` and a `proof` in `design/apps.json`, and run
+  `mise -C design run app:check <app>` until its report says passed; then record its `checked` and
+  `overrides`, how it behaves in docs/problems.md, run `mise -C design run config:build`, and
+  commit the report with it.
 - **Run slow downloads in the background** and keep the conversation going; ask before anything
   that would download gigabytes.

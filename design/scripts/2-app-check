@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# Design-time stage 2, app:check: run one installed app and print what it showed, for the maintainer
-# to record (stage 3): its usage line, whether its bundle is what design/family.json and its overrides
-# say, the tools its headless and live servers list, and whether its file access can be confined.
-# It's the one stage that runs something on the machine: the app's CLI, its headless MCP server, and
-# its live server (which opens the desktop app; app:check closes it again if it wasn't open before).
-#
 # Lineage:
 #   run by   `mise run app:check <app>` in design/ (design/mise.toml)
 #   reads    design/family.json, design/apps.json, design/scripts/app-merge.jq; the app's installed CLI and bundle
 #   runs     the app's CLI and both its MCP servers, the live one through scripts/app-open.sh
-#   writes   nothing: it prints what it found, and exits non-zero if something didn't work
+#   writes   design/checks/<app>.txt: what it printed, which ends in passed or failed; it also exits
+#            non-zero if something didn't work
+#
+# Design-time stage 2, app:check: run one installed app and print what it showed, for the maintainer
+# to record (stage 3): its usage line, whether its bundle is what design/family.json and its overrides
+# say, the tools its headless and live servers list, whether its file access can be confined, and
+# the answers to its proof: the calls from apps.json that make a change you can see in the app.
+# It's the one stage that runs something on the machine: the app's CLI, its headless MCP server, and
+# its live server (which opens the desktop app; app:check closes it again if it wasn't open before).
 set -euo pipefail
 cd "$(dirname "$0")/.."  # design/, where the registry is
 id=${1:?usage: 2-app-check <app>}
@@ -38,41 +40,64 @@ dir=$(mise where "$id")
 bundle_name=$(cd "$dir" && ls -d *.app | head -1)
 executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$dir/$bundle_name/Contents/Info.plist")
 
-# The tool names an MCP server lists, given its command.
-tools() {
+# proof: the calls from apps.json that make a change you can see in the app. They go to the live
+# server, or to the headless one for an app without a live server.
+proof=$(jq -c --arg id "$id" '.apps[] | select(.id == $id) | .proof // []' apps.json)
+has_live=$([ "$(jq -r '.mcp.live' <<<"$app")" = null ] && echo no || echo yes)
+
+# One MCP session with a server, given its command: initialize, list its tools (answer 2), then make
+# each call in $1 (answers 10, 11, …). Prints every answer, one JSON object per line. A server that
+# doesn't answer prints nothing; the checks after it say so.
+session() {
+  local calls=$1; shift
   { printf '%s\n' \
       '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"check","version":"0"}}}' \
       '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
       '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+    jq -c 'to_entries[] | {jsonrpc: "2.0", id: (.key + 10), method: "tools/call",
+      params: {name: .value.tool, arguments: (.value.arguments // {})}}' <<<"$calls" \
+      | while read -r call; do sleep 3; printf '%s\n' "$call"; done
     sleep 10; } \
-    | (cd .. && perl -e 'alarm 60; exec @ARGV' "$@" 2>/dev/null) \
-    | jq -c 'select(.id == 2) | [.result.tools[].name] | sort'
+    | (cd .. && perl -e 'alarm 90; exec @ARGV' "$@" 2>/dev/null) \
+    | grep '^{' || true
 }
-# A server that doesn't answer leaves its list empty; the check after it says so.
-headless=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.headless[]' <<<"$app")) || true
+tool_names() { jq -c 'select(.id == 2) | [.result.tools[].name] | sort'; }
+
+answers=$(session "$([ "$has_live" = no ] && echo "$proof" || echo '[]')" \
+  mise exec -- "$cli" "$sub" $(jq -r '.mcp.headless[]' <<<"$app"))
+headless=$(tool_names <<<"$answers")
 [ -n "$headless" ] || { echo "$id's headless server didn't answer" >&2; exit 1; }
 
 live='null'
-if [ "$(jq -r '.mcp.live' <<<"$app")" = null ]; then
-  echo "$id has no live server (its overrides set mcp.live to null), so there's none to check" >&2
+if [ "$has_live" = no ]; then
+  echo "$id has no live server (its overrides set mcp.live to null), so the proof went to the headless one" >&2
 elif [ -n "$port" ]; then
   # Close the app again on the way out, pass or fail, if this check is what opened it.
   if ! pgrep -x "$executable" >/dev/null; then
     trap 'pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true' EXIT
   fi
-  live=$(tools mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" "$token_env" \
-    "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app")) || true
+  answers=$(session "$proof" mise exec -- sh scripts/app-open.sh "${bundle_name%.app}" "$control" "$port" \
+    "$token_env" "$cli" "$sub" $(jq -r '.mcp.live[]' <<<"$app"))
+  live=$(tool_names <<<"$answers")
   [ -n "$live" ] || { echo "$id's live server didn't answer on port $port" >&2; exit 1; }
 else
-  echo "$id has no port in apps.json yet, so its live server isn't checked" >&2
+  echo "$id has no port in apps.json yet, so its live server and its proof aren't checked" >&2
+  proof='[]'
 fi
 
-# What the app showed. A bundle that differs from family.json and the app's overrides needs an override.
+# What the app showed, printed and kept as the report. A bundle that differs from family.json and the
+# app's overrides needs an override.
 want_name=$(jq -r '.bundle.name' <<<"$app")
 want_exe=$(jq -r '.bundle.executable' <<<"$app")
 failed=0
-row() { printf '%-11s %s\n' "$1" "$2"; }
-row app "$id $(jq -r .version <<<"$app"), checked: $(jq -r --arg id "$id" '.apps[] | select(.id == $id) | .checked // "no"' apps.json)"
+report=
+row() {
+  local line
+  line=$(printf '%-11s %s' "$1" "$2")
+  echo "$line"
+  report+="$line"$'\n'
+}
+row app "$id $(jq -r .version <<<"$app"), checked on $(date +%F)"
 row usage "$usage"
 if [ "$bundle_name" = "$want_name" ] && [ "$executable" = "$want_exe" ]; then
   row bundle "$bundle_name, executable $executable, as family.json and its overrides say"
@@ -86,4 +111,27 @@ if [ "$live" != null ]; then
 fi
 row look "$(jq -r -n --argjson h "$headless" --argjson l "$live" '[($h + ($l // []))[] | select(test("screenshot|render|export_png"))] | unique | join(", ")')"
 row "file roots" "$(grep -q -- --automation-read-root <<<"$help" && echo "can be confined (--automation-read-root / --automation-write-root)" || echo "cannot be confined")"
+# Each proof call and its answer. A call that errs or isn't answered, or no proof at all, fails.
+calls=$(jq length <<<"$proof")
+if [ "$calls" = 0 ]; then
+  row proof "none made: apps.json has no proof for $id, or its live server wasn't checked"
+  failed=1
+fi
+for i in $(seq 0 $((calls - 1))); do
+  answer=$(jq -c --argjson n $((i + 10)) 'select(.id == $n)' <<<"$answers")
+  verdict=$(jq -r -n --argjson a "${answer:-null}" '
+    if $a == null then "no answer"
+    elif $a.error then "error: \($a.error.message)"
+    elif $a.result.isError then "error: \($a.result.content[0].text // "" | .[0:100])"
+    else "ok: \($a.result.content[0].text // "" | gsub("\\s+"; " ") | .[0:100])" end')
+  case $verdict in ok:*) ;; *) failed=1 ;; esac
+  row "$([ "$i" = 0 ] && echo proof)" "$(jq -r --argjson i "$i" '.[$i] | "\(.tool) \(.arguments // {} | tojson)"' <<<"$proof") → $verdict"
+done
+row result "$([ "$failed" = 0 ] && echo passed || echo failed)"
+
+# The report, kept in design/checks/: the evidence for the app's checked version in apps.json.
+mkdir -p checks
+{ echo "# Lineage: generated by design/scripts/2-app-check (stage 2, \`mise run app:check $id\` in design/)."
+  echo "# Read by design/scripts/4-registry-validate: an app's checked version must be one its report passed."
+  printf '%s' "$report"; } >"checks/$id.txt"
 exit "$failed"

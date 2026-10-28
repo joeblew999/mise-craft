@@ -6,7 +6,7 @@
 # Lineage:
 #   run by   registry:validate in design/mise.toml; config:generate depends on it, so
 #            `mise run config:build` in design/ runs it first
-#   reads    design/family.json, design/apps.json
+#   reads    design/family.json, design/apps.json, design/checks/<app>.txt (app:check's reports)
 #   writes   nothing
 set -euo pipefail
 cd "$(dirname "$0")/.."  # design/, where the registry is
@@ -33,6 +33,17 @@ trap 'rm -f "$problems"' EXIT
     | paths(type != "object") | select(all(.[]; type == "string"))
     | select(. as $p | [$fam[0] | paths] | index([$p]) == null)
     | "\($id): overrides \(join(".")), which family.json does not have"' apps.json
+
+  # Every checked app must have a report from app:check (design/checks/<app>.txt) saying that
+  # version passed: checked is the evidence's version, not anyone's word.
+  for id in $(jq -r '.apps[] | select(.checked) | .id' apps.json); do
+    v=$(jq -r --arg id "$id" '.apps[] | select(.id == $id) | .checked' apps.json)
+    if [ ! -f "checks/$id.txt" ]; then
+      echo "$id: checked $v, but app:check has no report for it (checks/$id.txt)"
+    elif ! grep -q "^app  *$id $v," "checks/$id.txt" || ! grep -q "^result  *passed$" "checks/$id.txt"; then
+      echo "$id: checked $v, but checks/$id.txt doesn't say $v passed"
+    fi
+  done
 } >"$problems"
 if [ -s "$problems" ]; then
   cat "$problems" >&2

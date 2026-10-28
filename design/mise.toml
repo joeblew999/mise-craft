@@ -7,22 +7,22 @@
 #   1 fetch      upstream:fetch (1-upstream-fetch)       GitHub                  nothing: prints each app's pinned
 #                                                                                and latest version, docs port and
 #                                                                                platforms
-#   2 check      app:check <app> (2-app-check)           the installed app       nothing: prints what the app
-#                                                                                showed, fails if something
-#                                                                                didn't work
+#   2 check      app:check <app> (2-app-check)           the installed app,      checks/<app>.txt: what the app
+#                                                        its proof in apps.json  showed and answered, ending in
+#                                                                                passed or failed
 #   3 record     (by hand)                               what 1 and 2 printed    family.json: what every app shares;
 #                                                                                apps.json: each app's version,
-#                                                                                checked, port and overrides;
+#                                                                                checked, port, overrides, proof;
 #                                                                                ../docs/problems.md: how apps behave
-#   4 validate   registry:validate (4-registry-validate) family.json, apps.json  nothing: stops here if anything
-#                                                                                is wrong
+#   4 validate   registry:validate (4-registry-validate) family.json, apps.json, nothing: stops here if anything
+#                                                        checks/                 is wrong
 #   5 generate   config:generate (5-config-generate)     family.json, apps.json  ../mise.toml, ../servers.json
 #   6 lock       lock:update (inline)                    ../mise.toml            ../mise.lock
 #
 # Stages 1 and 2 bring in facts from outside (GitHub, a running app), so they only run when asked,
-# and only print: what they print is the log, and the maintainer decides what to record in stage 3.
-# Run them with `| tee` to keep it. Stage 2 is the only stage that runs something on the machine:
-# it needs the app installed, and opens it to list its live tools. Stage 3 is done by whoever
+# and the maintainer decides what to record in stage 3. Stage 1 only prints. Stage 2 is the only
+# stage that runs something on the machine: it needs the app installed, opens it, and keeps its
+# report in checks/, the evidence registry:validate asks of every checked app. Stage 3 is done by whoever
 # maintains this repo. Stages 4 to 6 each depend on the one before, so config:build (or any one of
 # them) always runs them in order. Stages 1, 2 and 5 merge family and app with scripts/app-merge.jq.
 
@@ -31,7 +31,7 @@ description = "Stage 1: print each app's pinned and latest version, the port its
 run = "scripts/1-upstream-fetch"
 
 [tasks."app:check"]
-description = "Stage 2: run one installed app and print what it showed: usage line, bundle, headless and live tools, file confinement. Writes nothing; fails if something didn't work."
+description = "Stage 2: run one installed app and its proof (the calls in apps.json that change something you can see), and keep what it showed in checks/<app>.txt, ending in passed or failed."
 usage = 'arg "<app>" help="An installed app, such as cadcraft"'
 run = 'scripts/2-app-check "$usage_app"'
 

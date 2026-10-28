@@ -1,7 +1,7 @@
 {
   "//": [
     "Lineage: written by hand (stage 3, record), by whoever maintains this repo. No script writes it.",
-    "Each app holds only its definition: id, name, version (the exact version installed), checked (the version that was checked end to end: installed, `mise run app:check <app>` in design/, and a tool call that showed up in the app; an app without it is unchecked and gets no MCP servers), port (its control port, given once checked) and overrides (only where it differs from design/family.json, in the same shape). What every app shares is in design/family.json; how particular apps behave is in docs/problems.md.",
+    "Each app holds only its definition: id, name, version (the exact version installed), checked (the version that was checked end to end: design/checks/<app>.txt, the report of `mise run app:check <app>` in design/, must say that version passed; an app without it is unchecked and gets no MCP servers), port (its control port, given once checked), overrides (only where it differs from design/family.json, in the same shape) and proof (the tool calls that make a change you can see in the app, which app:check makes). What every app shares is in design/family.json; how particular apps behave is in docs/problems.md.",
     "Read by: every stage in design/ (merged with design/family.json by design/scripts/app-merge.jq) and mise-tasks/apps/status. Generates, through design/scripts/5-config-generate: the repo root's mise.toml and servers.json."
   ],
   "apps": [
@@ -10,7 +10,15 @@
       "name": "CADCraft",
       "version": "0.13.0",
       "checked": "0.13.0",
-      "port": 7979
+      "port": 7979,
+      "proof": [
+        {
+          "tool": "command_line",
+          "arguments": {
+            "text": "circle 0,0 50"
+          }
+        }
+      ]
     },
     {
       "id": "deckcraft",
@@ -25,14 +33,38 @@
             "{port}"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "new_presentation",
+          "arguments": {}
+        }
+      ]
     },
     {
       "id": "designcraft",
       "name": "DesignCraft",
       "version": "0.13.0",
       "checked": "0.13.0",
-      "port": 7981
+      "port": 7981,
+      "proof": [
+        {
+          "tool": "execute",
+          "arguments": {
+            "command": "frame.create",
+            "params": {
+              "rect": [
+                36,
+                36,
+                576,
+                300
+              ],
+              "content": "text",
+              "text": "mise-craft check"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "effectcraft",
@@ -47,7 +79,33 @@
             "{port}"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "command_run",
+          "arguments": {
+            "id": "comp.new",
+            "params": {
+              "name": "mise-craft check",
+              "width": 1920,
+              "height": 1080,
+              "frameRate": 30,
+              "duration": 5
+            }
+          }
+        },
+        {
+          "tool": "command_run",
+          "arguments": {
+            "id": "layer.newText",
+            "params": {
+              "text": "mise-craft check",
+              "size": 120,
+              "fill": "#ffffff"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "figcraft",
@@ -62,7 +120,16 @@
             "{port}"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "run_command",
+          "arguments": {
+            "command": "file.new",
+            "params": {}
+          }
+        }
+      ]
     },
     {
       "id": "filmcraft",
@@ -78,7 +145,18 @@
           ]
         },
         "control_token_env": "FILMCRAFT_CONTROL_TOKEN"
-      }
+      },
+      "proof": [
+        {
+          "tool": "command_run",
+          "arguments": {
+            "id": "file.newProject",
+            "params": {
+              "name": "mise-craft check"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "gridcraft",
@@ -93,14 +171,46 @@
             "{port}"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "write_range",
+          "arguments": {
+            "range": "A1",
+            "values": [
+              [
+                "mise-craft check",
+                "=2+2"
+              ]
+            ]
+          }
+        }
+      ]
     },
     {
       "id": "lightcraft",
       "name": "LightCraft",
       "version": "0.14.0",
       "checked": "0.14.0",
-      "port": 7989
+      "port": 7989,
+      "proof": [
+        {
+          "tool": "command_run",
+          "arguments": {
+            "id": "library.filter",
+            "params": {
+              "text": "mise-craft check"
+            }
+          }
+        },
+        {
+          "tool": "command_run",
+          "arguments": {
+            "id": "library.clearFilter",
+            "params": {}
+          }
+        }
+      ]
     },
     {
       "id": "pdfcraft",
@@ -111,7 +221,30 @@
         "mcp": {
           "live": null
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "doc_create",
+          "arguments": {
+            "from": "blank",
+            "name": "mise-craft check",
+            "pages": 1
+          }
+        },
+        {
+          "tool": "page_add_text",
+          "arguments": {
+            "doc": 1,
+            "page": 1,
+            "text": "mise-craft check",
+            "size": 24,
+            "at": [
+              72,
+              72
+            ]
+          }
+        }
+      ]
     },
     {
       "id": "photocraft",
@@ -127,7 +260,17 @@
           ]
         },
         "control_token_env": "PHOTOCRAFT_CONTROL_TOKEN"
-      }
+      },
+      "proof": [
+        {
+          "tool": "doc_new",
+          "arguments": {
+            "name": "mise-craft check",
+            "width": 800,
+            "height": 600
+          }
+        }
+      ]
     },
     {
       "id": "soundcraft",
@@ -142,7 +285,21 @@
             "{port}"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "new_session",
+          "arguments": {
+            "name": "mise-craft check"
+          }
+        },
+        {
+          "tool": "execute",
+          "arguments": {
+            "command": "track.new"
+          }
+        }
+      ]
     },
     {
       "id": "vectorcraft",
@@ -156,14 +313,49 @@
             "--headless"
           ]
         }
-      }
+      },
+      "proof": [
+        {
+          "tool": "run_command",
+          "arguments": {
+            "command": "file.new"
+          }
+        },
+        {
+          "tool": "draw_shape",
+          "arguments": {
+            "shape": "star",
+            "cx": 306,
+            "cy": 396,
+            "radius1": 200,
+            "radius2": 90,
+            "fill": "#ff6600",
+            "stroke": "none"
+          }
+        }
+      ]
     },
     {
       "id": "wordcraft",
       "name": "WordCraft",
       "version": "0.11.0",
       "checked": "0.11.0",
-      "port": 7988
+      "port": 7988,
+      "proof": [
+        {
+          "tool": "new_document",
+          "arguments": {}
+        },
+        {
+          "tool": "execute",
+          "arguments": {
+            "command": "text.insert",
+            "params": {
+              "text": "mise-craft check"
+            }
+          }
+        }
+      ]
     }
   ]
 }
