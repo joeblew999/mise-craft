@@ -114,6 +114,7 @@
       "id": "soundcraft",
       "name": "SoundCraft",
       "version": "0.13.1",
+      "checked": "0.13.1",
       "port": 7986,
       "overrides": {
         "mcp": {

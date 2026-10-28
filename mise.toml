@@ -217,6 +217,14 @@ run = "mise run apps:install photocraft"
 description = "Uninstall PhotoCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall photocraft"
 
+[tasks."soundcraft:watch"]
+description = "Let Claude drive the SoundCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with soundcraft:unwatch."
+run = "mise run apps:watch soundcraft"
+
+[tasks."soundcraft:unwatch"]
+description = "Remove SoundCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch soundcraft"
+
 [tasks."soundcraft:install"]
 description = "Install SoundCraft 0.13.1: its CLI (soundcraft-cli, with the MCP server) and desktop app. Undo with soundcraft:uninstall."
 run = "mise run apps:install soundcraft"

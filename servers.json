@@ -68,6 +68,15 @@
         "mcp"
       ]
     },
+    "soundcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "soundcraft-cli",
+        "mcp"
+      ]
+    },
     "vectorcraft": {
       "command": "mise",
       "args": [
@@ -197,6 +206,23 @@
         "mcp",
         "--connect",
         "7985"
+      ]
+    },
+    "soundcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/app-open.sh",
+        "SoundCraft",
+        "--control",
+        "7986",
+        "-",
+        "soundcraft-cli",
+        "mcp",
+        "--connect",
+        "7986"
       ]
     },
     "vectorcraft-app": {
