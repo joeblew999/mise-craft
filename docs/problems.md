@@ -6,11 +6,12 @@ Which apps don't work comes first; everything below it can wait. The numbers nev
 
 ## Apps that don't work yet
 
-- **29. LightCraft, PdfCraft, PhotoCraft, WordCraft: never checked.** They can be installed,
-  but get no MCP servers. *Next: install, check and record each, one at a time.*
+- **29. LightCraft, PhotoCraft, WordCraft: never checked.** They can be installed, but get no
+  MCP servers. *Next: install, check and record each, one at a time.*
 
 Working, as last checked: CADCraft, DeckCraft, DesignCraft, EffectCraft, FigCraft, FilmCraft,
-GridCraft, SoundCraft, VectorCraft. `mise run apps:status` shows each app's checked version.
+GridCraft, PdfCraft (headless only, problem 37), SoundCraft, VectorCraft. `mise run apps:status`
+shows each app's checked version.
 
 ## Later
 
@@ -51,6 +52,10 @@ GridCraft, SoundCraft, VectorCraft. `mise run apps:status` shows each app's chec
 - **36. SoundCraft's `mcp --help` starts its server instead of printing help**, and waits for
   input. `app:check` gives its help commands no input, so the server sees the end of it and stops.
   Its usage line is in `soundcraft-cli --help`, and it takes `--connect PORT`, the port alone.
+- **37. PdfCraft has no live server.** `pdfcraft-cli mcp` always works on its own document (its
+  docs: "there is no flag to connect it to a running app"); the desktop app is driven only by
+  `pdfcraft-cli ui --control FILE`. Its overrides set `mcp.live` to `null`, so it gets a headless
+  server and no watch tasks or port. Its `--help` puts several spaces after `mcp`.
 
 ## Limits to live with
 

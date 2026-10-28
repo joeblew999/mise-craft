@@ -15,9 +15,10 @@ cd "$(dirname "$0")/.."  # design/, where the registry is
 # filled in. An app is checked when apps.json gives it the version that was checked.
 full=$(jq -c --slurpfile fam family.json -L scripts 'include "app-merge"; [.apps[] | full($fam[0])]' apps.json)
 
-# One "id version name repo cli-asset app-asset" line per app, and the ids of the checked apps.
+# One "id version name repo cli-asset app-asset" line per app, and the ids of the checked apps that
+# have a live server (an app whose overrides set mcp.live to null has none, so it can't be watched).
 apps=$(jq -r '.[] | "\(.id) \(.version) \(.name) \(.repo) \(.install.cli) \(.install.app)"' <<<"$full")
-checked=$(jq -r '.[] | select(.checked) | .id' <<<"$full")
+watchable=$(jq -r '.[] | select(.checked and .mcp.live != null) | .id' <<<"$full")
 
 mise_toml() {
   cat <<'EOF'
@@ -59,7 +60,7 @@ EOF
   done <<<"$apps"
 
   while read -r id version name _ _ _; do
-    if grep -qx "$id" <<<"$checked"; then
+    if grep -qx "$id" <<<"$watchable"; then
       cat <<EOF
 
 [tasks."$id:watch"]
@@ -114,7 +115,7 @@ servers_json() {
     ],
     headless: ([.[] | select(.checked) | {key: .id,
       value: {command: "mise", args: (["exec", "--", .install.cli_bin, .mcp.subcommand] + .mcp.headless)}}] | from_entries),
-    live: ([.[] | select(.checked) | {key: "\(.id)-app",
+    live: ([.[] | select(.checked and .mcp.live != null) | {key: "\(.id)-app",
       value: {command: "mise", args: (["exec", "--", "sh", "scripts/app-open.sh", (.bundle.name | rtrimstr(".app")),
         .control, (.port | tostring), (.control_token_env // "-"), .install.cli_bin, .mcp.subcommand] + .mcp.live)}}]
       | from_entries)

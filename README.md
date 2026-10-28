@@ -147,7 +147,8 @@ Files the apps write themselves, such as documents, preferences and control toke
   knows, at session start and on `claude mcp list`, and starting most live servers opens the app.
   Turning them off in settings doesn't work either: Claude Code merges `disabledMcpjsonServers`
   across its settings files, so a server switched off for everyone can't be switched back on for
-  one person. `<app>:watch` adds the live server with a `MISE_CRAFT_WATCH` environment variable as
+  one person. An app without a live server (PdfCraft, whose overrides set `mcp.live` to `null`)
+  has no watch tasks. `<app>:watch` adds the live server with a `MISE_CRAFT_WATCH` environment variable as
   its marker, and `<app>:unwatch` removes only servers that carry it, so a server of the same name
   that you added yourself is never replaced or removed.
 - **Claude Desktop** starts servers outside this repo with a minimal `PATH`, so `claude-desktop:install`

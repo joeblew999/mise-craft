@@ -103,7 +103,13 @@
     {
       "id": "pdfcraft",
       "name": "PdfCraft",
-      "version": "0.14.0"
+      "version": "0.14.0",
+      "checked": "0.14.0",
+      "overrides": {
+        "mcp": {
+          "live": null
+        }
+      }
     },
     {
       "id": "photocraft",

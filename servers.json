@@ -68,6 +68,15 @@
         "mcp"
       ]
     },
+    "pdfcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "pdfcraft-cli",
+        "mcp"
+      ]
+    },
     "soundcraft": {
       "command": "mise",
       "args": [

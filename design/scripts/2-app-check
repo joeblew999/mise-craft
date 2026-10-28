@@ -32,7 +32,8 @@ usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" -
       /^[[:space:]]*\[/ && cur != "" { sub(/^[[:space:]]+/, ""); cur = cur " " $0; next }
       { flush() }
       { line = $0; sub(/^[[:space:]]*(usage:[[:space:]]*)?/, "", line) }
-      line ~ ("^(" cli " )?" sub_ " \\[") {
+      line ~ ("^(" cli " )?" sub_ " +\\[") {
+        sub(sub_ " +\\[", sub_ " [", line)
         sub(/[[:space:]][[:space:]]+.*$/, "", line)
         if (line !~ ("^" cli " ")) line = cli " " line
         cur = line
@@ -65,7 +66,9 @@ headless=$(tools mise exec -- "$cli" "$sub" $(jq -r '.mcp.headless[]' <<<"$app")
 [ -n "$headless" ] || { echo "$id's headless server didn't answer" >&2; exit 1; }
 
 live='null'
-if [ -n "$port" ]; then
+if [ "$(jq -r '.mcp.live' <<<"$app")" = null ]; then
+  echo "$id has no live server (its overrides set mcp.live to null), so there's none to check" >&2
+elif [ -n "$port" ]; then
   # Close the app again on the way out, pass or fail, if this check is what opened it.
   if ! pgrep -x "$executable" >/dev/null; then
     trap 'pkill -f "$dir/$bundle_name/Contents/MacOS/" 2>/dev/null || true' EXIT

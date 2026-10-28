@@ -19,8 +19,9 @@ trap 'rm -f "$problems"' EXIT
   jq -r '.apps[] | select(.checked) | select(.checked | test("^[0-9]+\\.[0-9]+\\.[0-9]+$") | not)
     | "\(.id): checked \(.checked) is not an exact version"' apps.json
 
-  # Every checked app must have a port.
+  # Every checked app must have a port, unless it has no live server (its overrides set mcp.live to null).
   jq -r '.apps[] | select(.checked and .port == null)
+    | select((.overrides.mcp // {}) | has("live") and .live == null | not)
     | "\(.id): checked but has no port"' apps.json
 
   # No two apps may share a port.

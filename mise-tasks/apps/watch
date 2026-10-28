@@ -19,7 +19,7 @@ for app in $usage_app; do
   name="$app-app"
   server=$(jq -c --arg n "$name" --arg m "$marker" \
     '.live[$n] // empty | .env = ((.env // {}) + {($m): "1"})' servers.json)
-  [ -n "$server" ] || { echo "$app has no live server in servers.json: it is not checked yet" >&2; exit 1; }
+  [ -n "$server" ] || { echo "$app has no live server in servers.json: it isn't checked yet, or it has none" >&2; exit 1; }
   mise which "$app-cli" >/dev/null 2>&1 || { echo "$app is not installed: run mise run $app:install first" >&2; exit 1; }
   existing=$(jq -c --arg root "$root" --arg n "$name" \
     '.projects[$root].mcpServers[$n] // empty' "${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json" 2>/dev/null || true)
