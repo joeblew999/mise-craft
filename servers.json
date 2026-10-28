@@ -68,6 +68,15 @@
         "mcp"
       ]
     },
+    "lightcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "lightcraft-cli",
+        "mcp"
+      ]
+    },
     "pdfcraft": {
       "command": "mise",
       "args": [
@@ -233,6 +242,23 @@
         "mcp",
         "--connect",
         "7985"
+      ]
+    },
+    "lightcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/app-open.sh",
+        "LightCraft",
+        "--control",
+        "7989",
+        "-",
+        "lightcraft-cli",
+        "mcp",
+        "--connect",
+        "127.0.0.1:7989"
       ]
     },
     "photocraft-app": {

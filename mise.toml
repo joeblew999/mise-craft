@@ -193,6 +193,14 @@ run = "mise run apps:install gridcraft"
 description = "Uninstall GridCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall gridcraft"
 
+[tasks."lightcraft:watch"]
+description = "Let Claude drive the LightCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with lightcraft:unwatch."
+run = "mise run apps:watch lightcraft"
+
+[tasks."lightcraft:unwatch"]
+description = "Remove LightCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch lightcraft"
+
 [tasks."lightcraft:install"]
 description = "Install LightCraft 0.14.0: its CLI (lightcraft-cli, with the MCP server) and desktop app. Undo with lightcraft:uninstall."
 run = "mise run apps:install lightcraft"

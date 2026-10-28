@@ -6,11 +6,9 @@ Which apps don't work comes first; everything below it can wait. The numbers nev
 
 ## Apps that don't work yet
 
-- **29. LightCraft: never checked.** It can be installed, but gets no MCP servers. *Next: install, check and record each, one at a time.*
-
-Working, as last checked: CADCraft, DeckCraft, DesignCraft, EffectCraft, FigCraft, FilmCraft,
-GridCraft, PdfCraft (headless only, problem 37), PhotoCraft, SoundCraft, VectorCraft, WordCraft. `mise run apps:status`
-shows each app's checked version.
+None: all 13 work, as last checked. PdfCraft works headless only (problem 37).
+`mise run apps:status` shows each app's checked version; a version that isn't the checked one
+shows `re-check`.
 
 ## Later
 
@@ -107,6 +105,9 @@ Kept so they don't happen again.
   (CADCraft's bug, upstream #2087). CADCraft now opens through `scripts/app-open.sh` like every
   other app, which waits for the app's port first; in three cold starts the first call drew every
   time. Its override, and `opens_itself`, are gone.
+- **29. Five apps had never been checked**: LightCraft, PdfCraft, PhotoCraft, SoundCraft and
+  WordCraft. Each was installed, checked and recorded, with a call that showed up in the app
+  (headless, for PdfCraft).
 - **35. `upstream:fetch` could hang on one slow GitHub request**, and stopped without a word when
   one failed. Each request now gets 30 seconds (a watchdog stops it: `gh` ignores the alarm
   signal), each doc is fetched once, and an app GitHub doesn't answer for shows `?` in its row.

@@ -98,7 +98,9 @@
     {
       "id": "lightcraft",
       "name": "LightCraft",
-      "version": "0.14.0"
+      "version": "0.14.0",
+      "checked": "0.14.0",
+      "port": 7989
     },
     {
       "id": "pdfcraft",
