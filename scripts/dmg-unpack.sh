@@ -13,10 +13,13 @@ cd "$MISE_TOOL_INSTALL_PATH"
 dmg=$(ls) # the download is the only file in the install directory
 mnt=$(mktemp -d)
 hdiutil attach -quiet -nobrowse -readonly -mountpoint "$mnt" "$dmg"
+# If copying fails, don't leave the image mounted.
+trap 'hdiutil detach -quiet "$mnt"; rmdir "$mnt"' EXIT
 app=$(basename "$mnt"/*.app)
 ditto "$mnt/$app" "$app"
 hdiutil detach -quiet "$mnt"
 rmdir "$mnt"
+trap - EXIT
 rm "$dmg"
 # Register the app with LaunchServices: scripts/app-open.sh opens it by name (`open -a`),
 # which can't find an app outside /Applications that macOS has never seen.

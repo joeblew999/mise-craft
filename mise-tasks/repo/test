@@ -95,6 +95,29 @@ step "the broken builds generated nothing" git diff --quiet
 step "stages 4 to 6 run in order" sh -c 'mise -C design run lock:update 2>&1 | grep -o "^\[[a-z:]*\]" | uniq | tr "\n" " " | grep -q "\[registry:validate\] \[config:generate\] \[lock:update\]"'
 step "rebuilding changes nothing" git diff --quiet
 
+# The kinds of app, in what the build generated.
+every_live_server_opens_its_app() {
+  jq -e '[.live[].args[3]] | length > 0 and all(. == "scripts/app-open.sh")' servers.json >/dev/null
+}
+apps_without_a_live_server_are_headless_only() {
+  local ids
+  ids=$(jq -r '.apps[] | select(.checked and ((.overrides.mcp // {}) | has("live") and .live == null)) | .id' design/apps.json)
+  [ -n "$ids" ] || return 1
+  for id in $ids; do
+    jq -e --arg id "$id" '.headless[$id] != null and .live["\($id)-app"] == null' servers.json >/dev/null || return 1
+    ! grep -q "\"$id:watch\"" mise.toml || return 1
+  done
+}
+apps_that_share_a_token_pass_its_variable() {
+  jq -e -n --slurpfile a design/apps.json --slurpfile s servers.json '
+    [$a[0].apps[] | select(.checked and .overrides.control_token_env) as $x
+     | $s[0].live["\($x.id)-app"].args | index($x.overrides.control_token_env) != null]
+    | length > 0 and all' >/dev/null
+}
+step "every live server opens its app through app-open.sh" every_live_server_opens_its_app
+step "an app with no live server gets only a headless one" apps_without_a_live_server_are_headless_only
+step "an app that shares a token passes its variable" apps_that_share_a_token_pass_its_variable
+
 # Claude Desktop, on a copy of its config.
 desktop="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
 if [ -f "$desktop" ]; then cp "$desktop" "$work/desktop.orig"; else printf '{"mcpServers":{}}' >"$work/desktop.orig"; fi

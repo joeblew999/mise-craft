@@ -22,28 +22,15 @@ token_env=$(jq -r '.control_token_env // "-"' <<<"$app")
 port=$(jq -r '.port // empty' <<<"$app")
 mise which "$cli" >/dev/null 2>&1 || { echo "$id is not installed: run mise run $id:install at the repo root first" >&2; exit 1; }
 
-# usage: the CLI's own usage line for its MCP subcommand, the longest one its help shows (some list
-# options only under `mcp --help`), with any continuation lines that start with "[".
-# No input: a CLI that starts its server instead of printing help (SoundCraft's `mcp --help`) then
-# sees the end of input and stops.
-usage=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" --help 2>&1 || true; mise exec -- "$cli" "$sub" --no-such-option 2>&1 || true; } </dev/null \
-  | awk -v cli="$cli" -v sub_="$sub" '
-      function flush() { if (cur != "") { if (length(cur) > length(best)) best = cur; cur = "" } }
-      /^[[:space:]]*\[/ && cur != "" { sub(/^[[:space:]]+/, ""); cur = cur " " $0; next }
-      { flush() }
-      { line = $0; sub(/^[[:space:]]*(usage:[[:space:]]*)?/, "", line) }
-      line ~ ("^(" cli " )?" sub_ " +\\[") {
-        sub(sub_ " +\\[", sub_ " [", line)
-        sub(/[[:space:]][[:space:]]+.*$/, "", line)
-        if (line !~ ("^" cli " ")) line = cli " " line
-        cur = line
-      }
-      END { flush(); print best }')
-# Some CLIs list the subcommand without a bracketed usage line, only a description (problem 26): keep that.
-if [ -z "$usage" ]; then
-  usage=$( { mise exec -- "$cli" --help 2>&1 || true; } </dev/null | awk -v cli="$cli" -v sub_="$sub" '
-    $1 == sub_ && /^[[:space:]]+[^[:space:]]+[[:space:]][[:space:]]+/ { sub(/^[[:space:]]+[^[:space:]]+[[:space:]]+/, ""); print cli " " sub_ ": " $0; exit }')
-fi
+# The CLI's help, from every place a CLI might put it (some list the subcommand's options only
+# under `mcp --help`, some only when given an option they don't know). No input: a CLI that starts
+# its server instead of printing help (SoundCraft's `mcp --help`) then sees the end of it and stops.
+help=$( { mise exec -- "$cli" --help 2>&1 || true; mise exec -- "$cli" "$sub" --help 2>&1 || true
+  mise exec -- "$cli" "$sub" --no-such-option 2>&1 || true; } </dev/null )
+# usage: the help's lines about the subcommand, as they are (spaces squeezed), up to two.
+usage=$(grep -E "^[[:space:]]*(Usage:[[:space:]]*)?($cli[[:space:]]+)?$sub([[:space:]]|$)" <<<"$help" \
+  | sed -E 's/^[[:space:]]*(Usage:[[:space:]]*)?//; s/[[:space:]]+/ /g; s/ $//' | awk '!seen[$0]++' | head -2 \
+  | awk 'NR > 1 { printf "  ·  " } { printf "%s", $0 } END { print "" }')
 [ -n "$usage" ] || { echo "could not find $cli's $sub usage line" >&2; exit 1; }
 
 # bundle: from the installed app itself.
@@ -98,5 +85,5 @@ if [ "$live" != null ]; then
   row live "$(jq -r 'length' <<<"$live") tools on port $port; only here: $(jq -r --argjson h "$headless" '(. - $h) | if length == 0 then "none" else join(", ") end' <<<"$live")"
 fi
 row look "$(jq -r -n --argjson h "$headless" --argjson l "$live" '[($h + ($l // []))[] | select(test("screenshot|render|export_png"))] | unique | join(", ")')"
-row "file roots" "$(grep -q -- --automation-read-root <<<"$usage" && echo "can be confined (--automation-read-root / --automation-write-root)" || echo "cannot be confined")"
+row "file roots" "$(grep -q -- --automation-read-root <<<"$help" && echo "can be confined (--automation-read-root / --automation-write-root)" || echo "cannot be confined")"
 exit "$failed"

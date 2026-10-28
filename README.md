@@ -214,12 +214,11 @@ CLAUDE.md                        read by Claude Code; imports this README
 ## Plan
 
 1. Load the servers in Claude Desktop itself, and wire up watching there.
-2. Check the remaining apps (stage 2 is built: `mise -C design run app:check <app>`).
-3. Confine the headless servers' file access (problem 13), once the folders are chosen.
-4. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
+2. Confine the headless servers' file access (problem 13), once the folders are chosen.
+3. claude.ai connectors (web, mobile, synced into Claude Code), set up and removed by mise tasks
    like everything else. They need the servers reachable over HTTPS: a bridge, a tunnel and
    authentication.
-5. Linux and Windows, as the apps publish CLIs for them.
+4. Linux and Windows, as the apps publish CLIs for them.
 
 ## Working on this repo
 
