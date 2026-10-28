@@ -114,7 +114,18 @@
     {
       "id": "photocraft",
       "name": "PhotoCraft",
-      "version": "0.16.0"
+      "version": "0.16.0",
+      "checked": "0.16.0",
+      "port": 7987,
+      "overrides": {
+        "mcp": {
+          "live": [
+            "--bridge",
+            "127.0.0.1:{port}"
+          ]
+        },
+        "control_token_env": "PHOTOCRAFT_CONTROL_TOKEN"
+      }
     },
     {
       "id": "soundcraft",

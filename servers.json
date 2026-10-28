@@ -77,6 +77,15 @@
         "mcp"
       ]
     },
+    "photocraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "photocraft-cli",
+        "mcp"
+      ]
+    },
     "soundcraft": {
       "command": "mise",
       "args": [
@@ -215,6 +224,23 @@
         "mcp",
         "--connect",
         "7985"
+      ]
+    },
+    "photocraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/app-open.sh",
+        "PhotoCraft",
+        "--control",
+        "7987",
+        "PHOTOCRAFT_CONTROL_TOKEN",
+        "photocraft-cli",
+        "mcp",
+        "--bridge",
+        "127.0.0.1:7987"
       ]
     },
     "soundcraft-app": {

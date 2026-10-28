@@ -142,7 +142,7 @@ Files the apps write themselves, such as documents, preferences and control toke
 - **Opening the app for a live server.** [scripts/app-open.sh](scripts/app-open.sh) opens the
   app with its control port, waits until the app answers on it, and then starts the server, so the
   app opens as soon as its live server starts. For an app with a
-  `control_token_env` (FilmCraft), it also makes a fresh token and gives it to both.
+  `control_token_env` (FilmCraft, PhotoCraft), it also makes a fresh token and gives it to both.
 - **Watching.** Live servers stay out of `.mcp.json` because Claude Code starts every server it
   knows, at session start and on `claude mcp list`, and starting most live servers opens the app.
   Turning them off in settings doesn't work either: Claude Code merges `disabledMcpjsonServers`

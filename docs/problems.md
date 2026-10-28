@@ -6,11 +6,10 @@ Which apps don't work comes first; everything below it can wait. The numbers nev
 
 ## Apps that don't work yet
 
-- **29. LightCraft, PhotoCraft, WordCraft: never checked.** They can be installed, but get no
-  MCP servers. *Next: install, check and record each, one at a time.*
+- **29. LightCraft, WordCraft: never checked.** They can be installed, but get no MCP servers. *Next: install, check and record each, one at a time.*
 
 Working, as last checked: CADCraft, DeckCraft, DesignCraft, EffectCraft, FigCraft, FilmCraft,
-GridCraft, PdfCraft (headless only, problem 37), SoundCraft, VectorCraft. `mise run apps:status`
+GridCraft, PdfCraft (headless only, problem 37), PhotoCraft, SoundCraft, VectorCraft. `mise run apps:status`
 shows each app's checked version.
 
 ## Later
@@ -44,10 +43,12 @@ shows each app's checked version.
   DeckCraft `new_presentation`; EffectCraft `command_run {"id": "comp.new"}`; FigCraft
   `run_command {"command": "file.new", "params": {}}`; VectorCraft
   `run_command {"command": "file.new"}`.
-- **28. FilmCraft opens its control port only to a token it shares with its live server**, through
-  `FILMCRAFT_CONTROL_TOKEN`, made fresh for each session; the other apps keep their own token. Its
-  `control_token_env` override makes `scripts/app-open.sh` create one and give it to both. So a
-  FilmCraft opened some other way can't be driven: quit it first. `open --env` puts the token on
+- **28. FilmCraft and PhotoCraft open their control port only to a token they share with their
+  live server**, through `FILMCRAFT_CONTROL_TOKEN` and `PHOTOCRAFT_CONTROL_TOKEN`, made fresh for
+  each session; the other apps keep their own token. Their `control_token_env` override makes
+  `scripts/app-open.sh` create one and give it to both. So one of them opened some other way
+  can't be driven: quit it first. (PhotoCraft, opened without one, makes its own and only prints
+  it.) `open --env` puts the token on
   `open`'s command line for a moment, which FilmCraft's docs advise against.
 - **36. SoundCraft's `mcp --help` starts its server instead of printing help**, and waits for
   input. `app:check` gives its help commands no input, so the server sees the end of it and stops.

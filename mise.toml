@@ -209,6 +209,14 @@ run = "mise run apps:install pdfcraft"
 description = "Uninstall PdfCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall pdfcraft"
 
+[tasks."photocraft:watch"]
+description = "Let Claude drive the PhotoCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with photocraft:unwatch."
+run = "mise run apps:watch photocraft"
+
+[tasks."photocraft:unwatch"]
+description = "Remove PhotoCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch photocraft"
+
 [tasks."photocraft:install"]
 description = "Install PhotoCraft 0.16.0: its CLI (photocraft-cli, with the MCP server) and desktop app. Undo with photocraft:uninstall."
 run = "mise run apps:install photocraft"
