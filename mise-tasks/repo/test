@@ -70,7 +70,14 @@ step "apps:status shows the live server" sh -c 'mise run apps:status 2>/dev/null
 step "cadcraft:unwatch" mise run cadcraft:unwatch
 step "the live server is gone" sh -c '! claude mcp list 2>&1 | grep -q "^cadcraft-app:"'
 [ "$cadcraft_open" = no ] && pkill -x CADCraft
-step "watch refuses an app that isn't installed" sh -c '! mise run wordcraft:watch'
+# Any checked app with a live server that isn't installed on this machine will do.
+absent=$(for n in $(jq -r '.live | keys[] | rtrimstr("-app")' servers.json); do
+  mise which "$n-cli" >/dev/null 2>&1 || { echo "$n"; break; }; done)
+if [ -n "$absent" ]; then
+  step "watch refuses $absent, which isn't installed" sh -c '! mise run "$1:watch"' _ "$absent"
+else
+  echo "SKIP  watch refuses an app that isn't installed: every app is installed here"
+fi
 
 # Design time, in stage order.
 step "stage 1, upstream:fetch" sh -c 'mise -C design run upstream:fetch >"$1" 2>&1' _ "$work/fetch.out"
