@@ -257,6 +257,14 @@ run = "mise run apps:install vectorcraft"
 description = "Uninstall VectorCraft: every installed version of its CLI and desktop app, unregistered from macOS."
 run = "mise run apps:uninstall vectorcraft"
 
+[tasks."wordcraft:watch"]
+description = "Let Claude drive the WordCraft desktop app while you watch: adds its live MCP server to Claude Code for this project. Undo with wordcraft:unwatch."
+run = "mise run apps:watch wordcraft"
+
+[tasks."wordcraft:unwatch"]
+description = "Remove WordCraft's live MCP server from Claude Code."
+run = "mise run apps:unwatch wordcraft"
+
 [tasks."wordcraft:install"]
 description = "Install WordCraft 0.11.0: its CLI (wordcraft-cli, with the MCP server) and desktop app. Undo with wordcraft:uninstall."
 run = "mise run apps:install wordcraft"

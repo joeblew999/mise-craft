@@ -104,6 +104,15 @@
         "mcp",
         "--headless"
       ]
+    },
+    "wordcraft": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "wordcraft-cli",
+        "mcp"
+      ]
     }
   },
   "live": {
@@ -275,6 +284,23 @@
         "mcp",
         "--connect",
         "127.0.0.1:7990"
+      ]
+    },
+    "wordcraft-app": {
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "sh",
+        "scripts/app-open.sh",
+        "WordCraft",
+        "--control",
+        "7988",
+        "-",
+        "wordcraft-cli",
+        "mcp",
+        "--connect",
+        "127.0.0.1:7988"
       ]
     }
   }

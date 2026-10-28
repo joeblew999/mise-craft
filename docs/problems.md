@@ -6,10 +6,10 @@ Which apps don't work comes first; everything below it can wait. The numbers nev
 
 ## Apps that don't work yet
 
-- **29. LightCraft, WordCraft: never checked.** They can be installed, but get no MCP servers. *Next: install, check and record each, one at a time.*
+- **29. LightCraft: never checked.** It can be installed, but gets no MCP servers. *Next: install, check and record each, one at a time.*
 
 Working, as last checked: CADCraft, DeckCraft, DesignCraft, EffectCraft, FigCraft, FilmCraft,
-GridCraft, PdfCraft (headless only, problem 37), PhotoCraft, SoundCraft, VectorCraft. `mise run apps:status`
+GridCraft, PdfCraft (headless only, problem 37), PhotoCraft, SoundCraft, VectorCraft, WordCraft. `mise run apps:status`
 shows each app's checked version.
 
 ## Later
